@@ -9,9 +9,11 @@ a LogMXHandler.
 import logging
 import json
 
-from multiplexer.multiplexer_constants import types
+from obci.mx_legacy.multiplexer_constants import types
+
 
 class LogMXHandler(logging.Handler):
+
     """
 The handler pickles log records and sends them
 to the multiplexer as OBCI_LOG_MESSAGE. The records should be
@@ -46,9 +48,9 @@ picked up by a log collector mx peer."""
             record.args = None
             record.exc_info = None
             # print record.__dict__
-            data = json.dumps(record.__dict__)
+            data = json.dumps(record.__dict__).encode()
             self.conn.send_message(
-                        message=data, type=types.OBCI_LOG_MESSAGE, flush=True)
+                message=data, type=types.OBCI_LOG_MESSAGE, flush=True)
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception:

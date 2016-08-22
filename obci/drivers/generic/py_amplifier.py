@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, time
-
-from multiplexer.multiplexer_constants import peers, types
-from obci.configs import settings, variables_pb2
+from obci.mx_legacy.multiplexer_constants import peers, types
+from obci.configs import variables_pb2
 from obci.control.peer.configured_client import ConfiguredClient
 from obci.utils.openbci_logging import log_crash
 
+
 class PyAmplifier(ConfiguredClient):
+
     @log_crash
     def __init__(self, addresses, peer_type=peers.AMPLIFIER):
         super(PyAmplifier, self).__init__(addresses=addresses, type=peer_type)
@@ -28,14 +28,12 @@ class PyAmplifier(ConfiguredClient):
         return v
 
     def _create_mx_msg(self, msg):
-            return msg.SerializeToString()
+        return msg.SerializeToString()
 
     def _send(self, msg):
-        self.conn.send_message(message = msg,
-                               type = self.mx_signal_type, flush=True)
+        self.conn.send_message(message=msg,
+                               type=self.mx_signal_type, flush=True)
 
     def _manage_params(self):
-        self.samples_per_packet = int(self.get_param("samples_per_packet"))        
-        self.mx_signal_type = types.AMPLIFIER_SIGNAL_MESSAGE
-
-
+        self.samples_per_packet = int(self.get_param("samples_per_packet"))
+        self.mx_signal_type = types.__dict__[self.config.get_param("mx_signal_type")]

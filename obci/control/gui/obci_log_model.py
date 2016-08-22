@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import thread
+import _thread
 import time
 
 from PyQt4 import QtCore
@@ -29,9 +29,9 @@ class LogModel(QtCore.QObject):
         # self._exp = exp
         self._run = True
         self._is_running = True
-        thread.start_new_thread(
+        _thread.start_new_thread(
             self.run,
-                ()
+            ()
         )
 
     def stop_running(self):
@@ -57,7 +57,7 @@ class LogModel(QtCore.QObject):
 
     def emit_logs(self):
         self._mutex.lock()
-        for peer_id, log in self._peers_log.iteritems():
+        for peer_id, log in self._peers_log.items():
             self.update_log.emit(log)
         self._mutex.unlock()
 
@@ -70,7 +70,7 @@ class LogModel(QtCore.QObject):
                 time.sleep(0.1)
             else:
                 self._mutex.lock()
-                if not self._peers_log.has_key(peer_id):
+                if peer_id not in self._peers_log:
                     self._peers_log[peer_id] = {'peer_id': peer_id,
                                                 'logs': []}
                 self._peers_log[peer_id]['logs'].append(log)
@@ -79,6 +79,6 @@ class LogModel(QtCore.QObject):
                     self.update_log.emit(e)
                 self._mutex.unlock()
 
-        print ("obci log model - model stoped running ")
+        print("obci log model - model stoped running ")
         self.post_run()
         self._is_running = False

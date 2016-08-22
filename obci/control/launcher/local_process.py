@@ -5,10 +5,10 @@ import time
 import signal
 import sys
 import os
-from process_io_handler import DEFAULT_TAIL_RQ
+from .process_io_handler import DEFAULT_TAIL_RQ
 
-import process
-from process import FAILED, FINISHED, TERMINATED, UNKNOWN, NON_RESPONSIVE,\
+from . import process
+from .process import FAILED, FINISHED, TERMINATED, NON_RESPONSIVE,\
     PING, RETURNCODE, REG_TIMER
 
 

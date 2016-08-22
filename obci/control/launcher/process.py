@@ -50,7 +50,7 @@ class Process(object):
 
         self.logger = logger or get_logger(
             'subprocess_monitor' + '-' + self.desc.name + '-' + str(self.desc.pid),
-                                stream_level='info')
+            stream_level='info')
         self.set_registration_timeout_handler(reg_timeout_desc)
         self.registration_data = None
 
@@ -199,7 +199,7 @@ class Process(object):
                             if self._status not in [FAILED, FINISHED]:
                                 self._status = NON_RESPONSIVE
                                 self._status_details = 'ping response timeout'
-                            print "status:", self._status
+                            print("status:", self._status)
                             is_alive = False
         finally:
             if self.rq_sock is not None:

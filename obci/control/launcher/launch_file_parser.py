@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import ConfigParser
+import configparser
 import os
 import warnings
 import codecs
@@ -11,7 +11,7 @@ import logging
 import obci.control.peer.peer_config as peer_config
 import obci.control.peer.peer_config_parser as peer_config_parser
 from obci.control.peer.config_defaults import CONFIG_DEFAULTS
-from obci.control.launcher.system_config import OBCIExperimentConfig, OBCISystemConfigError
+from obci.control.launcher.system_config import OBCISystemConfigError
 from obci.control.launcher.launcher_tools import expand_path, default_config_path
 
 PEERS = "peers"
@@ -46,7 +46,6 @@ class ScenarioParser(object):
         # FIXME rewrite cleaner
 
         machine_set = False
-        peer_config_file = ''
         config_section_contents = ''
         peer_path = ''
 
@@ -83,7 +82,6 @@ class ScenarioParser(object):
         if not peer_path:
             raise OBCISystemConfigError("No program path defined for peer_id {0}".format(peer_id))
         self._parse_peer_config_section(peer_id, config_section_contents, peer_path)
-        # self._parse_peer_config(peer_id, peer_config_file, peer_path)
 
 
 class LaunchFileParser(ScenarioParser):
@@ -96,7 +94,7 @@ class LaunchFileParser(ScenarioParser):
         self.logger = logger or logging.getLogger("LaunchFileParser")
 
     def _prepare(self, p_file, p_config_obj):
-        self.parser = ConfigParser.RawConfigParser()
+        self.parser = configparser.RawConfigParser()
         self.parser.readfp(p_file)
         self.config = p_config_obj
 
@@ -107,7 +105,6 @@ class LaunchFileParser(ScenarioParser):
                 raise OBCISystemConfigError("Unrecognized launch file section: {0}".format(main_s))
 
     def _load_general_settings(self):
-        items = self.parser.items(PEERS)
         if self.parser.has_option(PEERS, 'mx'):
             self.config.mx = self.parser.get(PEERS, 'mx')
 
@@ -130,7 +127,7 @@ class LaunchFileParser(ScenarioParser):
     def _parse_peer_config(self, peer_id, config_path, peer_program_path):
         peer_cfg, peer_parser = parse_peer_default_config(
             peer_id, peer_program_path, self.logger,
-                                                self._apply_globals)
+            self._apply_globals)
         # print "Trying to parse {0} for {1}".format(config_path, peer_id)
         if config_path:
             with codecs.open(config_path, "r", "utf8") as f:
@@ -201,7 +198,7 @@ class LaunchJSONParser(ScenarioParser):
         self.config = p_config_obj
 
     def _peer_sections(self):
-        items = self.load[PEERS].keys()
+        items = list(self.load[PEERS].keys())
         if 'scenario_dir' in items:
             items.remove('scenario_dir')
         return items
@@ -226,7 +223,7 @@ class LaunchJSONParser(ScenarioParser):
 
     def _load_launch_data(self, peer_sections):
         for sec in peer_sections:
-            items = self.load[PEERS][sec].items()
+            items = list(self.load[PEERS][sec].items())
             self._load_peer(sec, items)
 
     def _parse_peer_config_section(self, peer_id, peer_config_section, peer_path):
@@ -247,10 +244,10 @@ class LaunchJSONParser(ScenarioParser):
         self.config.set_peer_config(peer_id, peer_cfg)
         peer_sec = self.load[PEERS][peer_id]
         if CONFIG_SRCS in peer_sec:
-            for src_name, src_id in peer_sec[CONFIG_SRCS].iteritems():
+            for src_name, src_id in peer_sec[CONFIG_SRCS].items():
                 self.config.set_config_source(peer_id, src_name, src_id)
         if LAUNCH_DEPS in peer_sec:
-            for dep_name, dep_id in peer_sec[LAUNCH_DEPS].iteritems():
+            for dep_name, dep_id in peer_sec[LAUNCH_DEPS].items():
                 self.config.set_launch_dependency(peer_id, dep_name, dep_id)
 
     def _set_sources(self):
@@ -273,7 +270,7 @@ def parse_peer_default_config(peer_id, peer_program_path, logger=None, apply_glo
     peer_cfg = peer_config.PeerConfig(peer_id)
     conf_path = default_config_path(peer_program_path)
     if apply_globals:
-        for param, value in CONFIG_DEFAULTS.iteritems():
+        for param, value in CONFIG_DEFAULTS.items():
             peer_cfg.add_local_param(param, value)
     if conf_path:
 
@@ -294,7 +291,7 @@ def extend_experiment_config(exp_config, peer_id, peer_path,
         peer_id, peer_path, apply_globals=apply_globals)
     if custom_config_path:
         with codecs.open(custom_config_path, "r", "utf8") as f:
-            print "parsing _custom_ config for peer  ", peer_id, custom_config_path
+            print("parsing _custom_ config for peer  ", peer_id, custom_config_path)
             cfg_parser.parse(f, peer_cfg)
 
     return exp_config.extend_with_peer(peer_id, peer_path, peer_cfg,

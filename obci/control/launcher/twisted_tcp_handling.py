@@ -9,11 +9,10 @@ import zmq
 import socket
 import threading
 
-from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg, PollingObject
-from obci.control.launcher.launcher_messages import message_templates, error_codes
+from obci.control.common.message import OBCIMessageTool, send_msg, PollingObject
+from obci.control.launcher.launcher_messages import message_templates
 
 from obci.control.common.obci_control_settings import PORT_RANGE
-import obci.control.common.net_tools as net
 
 
 class OBCIProxy(NetstringReceiver):
@@ -22,8 +21,9 @@ class OBCIProxy(NetstringReceiver):
         req_sock = self.factory.ctx.socket(zmq.REQ)
         req_sock.connect(self.factory.zmq_rep_addr)
         try:
-            req = unicode(string, encoding='utf-8')
-            print "twisted got:", req
+            req = string
+            assert isinstance(req, bytes)
+            print("twisted got:", req)
             bad = False
             try:
                 parsed = self.factory.mtool.unpack_msg(req)
@@ -54,9 +54,8 @@ class OBCIProxy(NetstringReceiver):
                     msg = self.factory.mtool.fill_msg("rq_error", details=det)
                     return
 
-        encmsg = msg.encode('utf-8')
-        self.sendString(encmsg)
-        reactor.callFromThread(self.sendString, encmsg)
+        self.sendString(msg)
+        reactor.callFromThread(self.sendString, msg)
 
 
 class OBCIProxyFactory(Factory):
@@ -70,7 +69,7 @@ class OBCIProxyFactory(Factory):
 
         for msgtype in ["find_eeg_experiments",
                         "find_eeg_amplifiers",
-                        #"join_experiment",
+                        # "join_experiment",
                         "start_eeg_signal"]:
             self.long_rqs[msgtype] = self._make_pull_sock()
 
@@ -92,9 +91,9 @@ def run_twisted_server(address, zmq_ctx, zmq_rep_addr):
     thr = threading.Thread(target=reactor.run, args=[False])
     thr.daemon = True
     thr.start()
-    print "Twisted: listening on port", port
+    print("Twisted: listening on port", port)
     return thr, port
 
 if __name__ == '__main__':
     run_twisted_server(('0.0.0.0', 12013), zmq.Context(), 'tcp://127.0.0.1:54654')
-    print "twisted: server started."
+    print("twisted: server started.")

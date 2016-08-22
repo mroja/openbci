@@ -1,3 +1,0 @@
-#!/bin/bash
-sudo killall mxcontrol
-sudo killall python

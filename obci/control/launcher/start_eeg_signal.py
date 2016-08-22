@@ -1,19 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import json
 import zmq
 import time
-import socket
 
-import obci.control.common.net_tools as net
-from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg, PollingObject
-from obci.control.launcher.launcher_messages import message_templates, error_codes
+from obci.control.common.message import OBCIMessageTool, send_msg
+from obci.control.launcher.launcher_messages import message_templates
 from obci.control.launcher.obci_client import OBCIClient
 
 import obci.control.launcher.launcher_logging as logger
-import obci.control.launcher.launcher_tools
-from obci.control.common.obci_control_settings import PORT_RANGE
 from obci.control.peer import peer_cmd
 from obci.control.peer.config_defaults import CONFIG_DEFAULTS
 
@@ -32,11 +27,11 @@ def start_eeg_signal_experiment(ctx, srv_addrs, rq_message):
     amp_params.update(rq_message.amplifier_params)
 
     par_list = ['--peer', 'amplifier']
-    for par, val in amp_params.iteritems():
-        par_list += ['-p', par, unicode(val)]
-    for par, val in CONFIG_DEFAULTS.iteritems():
+    for par, val in amp_params.items():
+        par_list += ['-p', par, str(val)]
+    for par, val in CONFIG_DEFAULTS.items():
         if par not in par_list:
-            par_list += ['-p', par, unicode(val)]
+            par_list += ['-p', par, str(val)]
 
     overwrites = peer_cmd.peer_overwrites_pack(par_list)
     result = client.launch(rq_message.launch_file, None, rq_message.name, overwrites)

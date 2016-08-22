@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import socket
 
-from multiplexer.multiplexer_constants import peers, types
+from obci.mx_legacy.multiplexer_constants import peers, types
 from obci.control.peer.configured_multiplexer_server import ConfiguredMultiplexerServer
 from obci.configs import settings
 
@@ -29,7 +29,7 @@ class OBCILogCollector(ConfiguredMultiplexerServer):
             try:
                 self.socket.sendto(mxmsg.message,
                                    (self.ip, self.port))
-            except Exception, l_exc:
+            except Exception as l_exc:
                 self.logger.error("An error occured while sending log to socket")
                 self.socket.close()
         else:

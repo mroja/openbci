@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
 # Project was initiated by Magdalena Michalska and Krzysztof Kulewski
@@ -23,74 +22,76 @@
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
 #
 
-import os.path
 import xml.dom.minidom
 from .. import types_utils
 
 
 TAG_STYLES = {
-    'gray': {'fill_color':'808080',
-             'outline_color':'808080',
-             'outline_width':'1.0',
-             'outline_dash':'',
-             'key_shortcut':'Shift b',
-             'marker':'0'
+    'gray': {'fill_color': '808080',
+             'outline_color': '808080',
+             'outline_width': '1.0',
+             'outline_dash': '',
+             'key_shortcut': 'Shift b',
+             'marker': '0'
              },
-    'red': {'fill_color':'ff0000',
-             'outline_color':'808080',
-             'outline_width':'1.0',
-             'outline_dash':'',
-             'key_shortcut':'Shift b',
-             'marker':'0'
-             },
-    'blue': {'fill_color':'0017ff',
-             'outline_color':'808080',
-             'outline_width':'1.0',
-             'outline_dash':'',
-             'key_shortcut':'Shift b',
-             'marker':'0'
+    'red': {'fill_color': 'ff0000',
+            'outline_color': '808080',
+            'outline_width': '1.0',
+            'outline_dash': '',
+            'key_shortcut': 'Shift b',
+            'marker': '0'
+            },
+    'blue': {'fill_color': '0017ff',
+             'outline_color': '808080',
+             'outline_width': '1.0',
+             'outline_dash': '',
+             'key_shortcut': 'Shift b',
+             'marker': '0'
              },
 
 
 
-    }
+}
 
 TAG_DEFS = {
-    #'default': 'gray',
-    #'word': 'red',
-    #'mask2': 'blue'
-    }
+    # 'default': 'gray',
+    # 'word': 'red',
+    # 'mask2': 'blue'
+}
+
+
 class TagsFileWriter(object):
+
     """A proxy for openbci tags file, that writes every next tag to file.
     public interface:
     - tag_received(tag_dict)
     - finish_saving()
     """
+
     def __init__(self, p_file_path, p_defs=None
-                 #p_defs = [{'name':'default', 
+                 # p_defs = [{'name':'default',
                  #           'description':'default description'}]
                  ):
         """Prepare data structure for storing in-memory xml file."""
 
         self._file_path = p_file_path
-        #TODO works in windows and linux on path with spaces?
-        self._xml_factory = xml.dom.minidom.Document() 
-        #an object useful in the future to easily create xml elements
+        # TODO works in windows and linux on path with spaces?
+        self._xml_factory = xml.dom.minidom.Document()
+        # an object useful in the future to easily create xml elements
         self._xml_root = self._xml_factory.createElement(
-            'tagFile') 
+            'tagFile')
         self._xml_root.setAttribute('formatVersion', '1.0')
-        #this is going to be an in-memory representation of xml info file
+        # this is going to be an in-memory representation of xml info file
         self._xml_factory.appendChild(self._xml_root)
 
         self._init_default_tags()
         self._init_tags_defs(p_defs)
 
-        #create 'tags' tag structure
+        # create 'tags' tag structure
         l_td = self._xml_factory.createElement('tagData')
         self._xml_root.appendChild(l_td)
         self._tags_root = self._xml_factory.createElement('tags')
         l_td.appendChild(self._tags_root)
-
 
         self._tags = []
 
@@ -107,12 +108,12 @@ class TagsFileWriter(object):
               <tag_item .... />
            </def_group>
         </tag_definitions>
-        
+
         tag_item paramteres are taken from TAG_DEFS.
         """
 
         if not p_defs:
-            return 
+            return
         l_td = self._xml_factory.createElement('tag_definitions')
         self._xml_root.appendChild(l_td)
 
@@ -123,13 +124,13 @@ class TagsFileWriter(object):
         for i_def in p_defs:
             l_item = self._xml_factory.createElement('tag_item')
             # Set name and description
-            for i_key, i_value in i_def.iteritems():
+            for i_key, i_value in i_def.items():
                 l_item.setAttribute(i_key, i_value)
-                
+
             # Set styles
             l_styles = TAG_STYLES[TAG_DEFS[i_def['name']]]
-            for i_key, i_value in l_styles.iteritems():
-                l_item.setAttribute(i_key, i_value)                
+            for i_key, i_value in l_styles.items():
+                l_item.setAttribute(i_key, i_value)
             l_tgr.appendChild(l_item)
 
     def tag_received(self, p_tag_dict):
@@ -145,36 +146,32 @@ class TagsFileWriter(object):
             l_tag_params = {}
             l_tag_params['name'] = self._get_tag_def_for(i_tag_dict['name'])
             l_tag_params['length'] = float(i_tag_dict['end_timestamp']) - \
-            float(i_tag_dict['start_timestamp'])
+                float(i_tag_dict['start_timestamp'])
             l_tag_params['position'] = float(i_tag_dict['start_timestamp']) - p_first_sample_ts
 
             l_tag = self._xml_factory.createElement('tag')
             l_tag.setAttribute('channelNumber', str(-1))
 
-            for i_key, i_value in l_tag_params.iteritems():
+            for i_key, i_value in l_tag_params.items():
                 l_tag.setAttribute(i_key, types_utils.to_string(i_value))
 
-            for i_key, i_value in i_tag_dict['desc'].iteritems():
+            for i_key, i_value in i_tag_dict['desc'].items():
                 elem = self._xml_factory.createElement(i_key)
                 val = self._xml_factory.createTextNode(types_utils.to_string(i_value))
                 elem.appendChild(val)
                 l_tag.appendChild(elem)
 
             self._tags_root.appendChild(l_tag)
-        
 
     def _get_tag_def_for(self, p_tag_name):
-        if p_tag_name in TAG_DEFS.keys():
-            return p_tag_name
-        else:
-            return p_tag_name
+        return p_tag_name
 
     def finish_saving(self, p_first_sample_ts):
         """Write xml tags to the file, return the file`s path."""
-        #TODO - lapac bledy
+        # TODO - lapac bledy
         self._serialize_tags(p_first_sample_ts)
 
-        f = open(self._file_path, 'w')
-        f.write(self._xml_factory.toxml('utf-8')) #TODO ustawic kodowanie
+        f = open(self._file_path, 'wb')
+        f.write(self._xml_factory.toxml('utf-8'))  # TODO ustawic kodowanie
         f.close()
         return self._file_path

@@ -15,12 +15,12 @@ class Graph(object):
         # print "bef copy: ", self.vertices()
         # print "edges_bef:  ", self._edges
         copied = {}
-        for (v1,v2) in self._edges:
+        for (v1, v2) in self._edges:
 
             for v in (v1, v2):
                 if v._model not in copied:
                     copied[v._model] = v.copy(gr)
-                
+
             cv1 = copied[v1._model]
             cv2 = copied[v2._model]
             gr.add_edge(cv1, cv2)
@@ -37,7 +37,7 @@ class Graph(object):
         return False
 
     def vertices(self):
-        return self._nlist.keys()
+        return list(self._nlist.keys())
 
     def _edges_(self):
         return self._edges
@@ -53,8 +53,8 @@ class Graph(object):
         for v in [v_a, v_z]:
             if v not in self._nlist:
                 self._nlist[v] = []
-        
-        if not v_z in self._nlist[v_a]:
+
+        if v_z not in self._nlist[v_a]:
             self._nlist[v_a].append(v_z)
             self._edges.append((v_a, v_z))
 
@@ -69,7 +69,7 @@ class Graph(object):
     def remove_vertex(self, vertex):
         if vertex not in self._nlist:
             raise Exception("vertex not in graph")
-        
+
         ins = vertex.in_edges()
         outs = vertex.out_edges()
 
@@ -90,7 +90,7 @@ class Graph(object):
             sinks = [v for v in gr.vertices() if not v.out_edges()]
             # print 'sinks: ', sinks
             if not sinks:
-                print 'cycle :('
+                print('cycle :(')
                 cycle = True
                 break
 
@@ -106,26 +106,24 @@ class Graph(object):
                 gr.remove_vertex(sinks[i])
 
         if gr._edges:
-            print 'cycle...'
+            print('cycle...')
             cycle = True
 
         # print "topo sort result:", not cycle, result
         return not cycle, result
 
 
-
 class Vertex(object):
+
     def __init__(self, graph, model, id_method=None):
         self._model = model
         self._graph = graph
-
 
     def __str__(self):
         return self._model.__str__()
 
     def __repr__(self):
         return self._model.__str__()
-
 
     def copy(self, new_graph):
         return Vertex(new_graph, self._model)

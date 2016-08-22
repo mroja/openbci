@@ -7,7 +7,7 @@ import subprocess
 
 from collections import deque
 try:
-    from Queue import Queue, Empty, Full
+    from queue import Queue, Empty, Full
 except ImportError:
     from queue import Queue, Empty, Full  # python 3.x
 
@@ -35,10 +35,10 @@ def start_stdio_handler(popen_obj, stdio_actions, name,
 
         io_handler = ProcessIOHandler(
             name=name,
-                        stdout=out_handle,
-                        stderr=err_handle,
-                        stdin=in_handle,
-                        out_log=stdout_log, err_log=stderr_log)
+            stdout=out_handle,
+            stderr=err_handle,
+            stdin=in_handle,
+            out_log=stdout_log, err_log=stderr_log)
         io_handler.start_output_handler()
     return io_handler
 
@@ -85,7 +85,7 @@ class ProcessIOHandler(object):
                 try:
                     log = open(log_name, 'w', buffering=0)
                 except IOError:
-                    print "{0} : Could not open log {1}".format(self.name, log_name)
+                    print("{0} : Could not open log {1}".format(self.name, log_name))
         return q, thr, log
 
     def communicate(self, input, response_timeout=None):
@@ -127,7 +127,7 @@ class ProcessIOHandler(object):
         return self.finished()
 
     def is_running(self):
-        return self._stop == False and self.__io_readers_alive()
+        return self._stop is False and self.__io_readers_alive()
 
     def finished(self):
         return (not self.__io_readers_alive()) and \
@@ -153,7 +153,7 @@ class ProcessIOHandler(object):
             self._stderr_thread.start()
 
     def _read(self, stream, queue):
-        print "reading... ", stream
+        print("reading... ", stream)
         for line in iter(stream.readline, ''):
             try:
                 queue.put(line)
@@ -161,8 +161,8 @@ class ProcessIOHandler(object):
                     break
             except Full:
                 # drop it :/
-                print "Queue full for stream {0} of {1}".format(stream, self.name)
-                print "Dropping line."
+                print("Queue full for stream {0} of {1}".format(stream, self.name))
+                print("Dropping line.")
 
         stream.close()
 
@@ -191,8 +191,8 @@ class ProcessIOHandler(object):
         if log is not None:
             try:
                 log.writelines(out)
-            except Exception, e:
-                print e, e.args
+            except Exception as e:
+                print(e, e.args)
 
     def _handle_stderr(self, lines=None, timeout=None):
         self._handle_stdio(self.stderr, self._err_q,

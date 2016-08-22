@@ -1,23 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, absolute_import
 
-import subprocess
 import threading
-import uuid
 import argparse
 import os.path
-import sys
-import json
 import time
 import socket
 
 import zmq
 
-from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg
-from obci.control.launcher.launcher_messages import message_templates, error_codes
-from obci.control.launcher.launcher_tools import module_path
+from obci.control.common.message import send_msg
 from obci.control.launcher.eeg_experiment_finder import find_eeg_experiments_and_push_results,\
     find_new_experiments_and_push_results
 from obci.control.launcher.start_eeg_signal import start_eeg_signal_experiment
@@ -27,11 +20,9 @@ import obci.control.common.obci_control_settings as settings
 import obci.control.common.net_tools as net
 from obci.control.peer import peer_cmd
 
-import obci.control.launcher.obci_experiment as obci_experiment
 import obci.control.launcher.obci_process_supervisor as obci_process_supervisor
 import obci.control.launcher.subprocess_monitor as subprocess_monitor
-from obci.control.launcher.subprocess_monitor import SubprocessMonitor, TimeoutDescription,\
-    STDIN, STDOUT, STDERR, NO_STDIO
+from obci.control.launcher.subprocess_monitor import SubprocessMonitor, NO_STDIO
 
 from obci.control.launcher.server_scanner import update_nearby_servers, broadcast_server
 
@@ -90,7 +81,7 @@ class OBCIServer(OBCIControlPeer):
         addr = "127.0.1.1"
         try:
             addr = self._nearby_servers.this_addr_network()
-        except Exception, e:
+        except Exception as e:
             self.logger.error(str(e))
         return addr
 
@@ -111,7 +102,7 @@ class OBCIServer(OBCIControlPeer):
                 ['tcp://*:' + str(self.rep_port)], zmq.REP)
             self.rep_socket.setsockopt(zmq.LINGER, 0)
             self._all_sockets.append(self.rep_socket)
-            logger.info(self.rep_addresses)
+            self.logger.info(self.rep_addresses)
 
         elif socket == self.exp_rep:
             self.logger.info("reinitialising EXPERIMENT REP socket")
@@ -138,8 +129,8 @@ class OBCIServer(OBCIControlPeer):
 
         self._tcp_proxy_thr, tcp_port = twisted_tcp_handling.run_twisted_server(
             ('0.0.0.0', tcp_port),
-                                            self.ctx,
-                                            self.rep_addresses[0])
+            self.ctx,
+            self.rep_addresses[0])
 
         self.tcp_addresses = [(self.my_ip(), tcp_port),
                               (socket.gethostname(), tcp_port)]
@@ -177,9 +168,9 @@ class OBCIServer(OBCIControlPeer):
 
         args += [
             '--sandbox-dir', str(sandbox_dir),
-                    '--launch-file', str(launch_file),
-                    '--name', exp_name,
-                    '--current-ip', self.my_ip()]
+            '--launch-file', str(launch_file),
+            '--name', exp_name,
+            '--current-ip', self.my_ip()]
         if overwrites is not None:
             args += peer_cmd.peer_overwrites_cmd(overwrites)
         # print '{0} [{1}] -- experiment args: {2}'.format(self.name, self.peer_type(), args)
@@ -253,7 +244,7 @@ class OBCIServer(OBCIControlPeer):
             exp.kill()
             exp.wait()
 
-        msg_type = self.client_rq[0].type
+        # msg_type = self.client_rq[0].type
         rq_sock = self.client_rq[1]
         send_msg(rq_sock, self.mtool.fill_msg("rq_error",
                                               err_code="create_experiment_error",
@@ -413,7 +404,7 @@ class OBCIServer(OBCIControlPeer):
         or uuid starts with strname.
         """
         match_names = {}
-        for uid, exp in self.experiments.iteritems():
+        for uid, exp in self.experiments.items():
             if exp.name.startswith(strname):
                 match_names[uid] = exp
 
@@ -423,7 +414,7 @@ class OBCIServer(OBCIControlPeer):
         experiments = set()
         for uid in match_ids:
             experiments.add(self.experiments[uid])
-        for name, exp in match_names.iteritems():
+        for name, exp in match_names.items():
             experiments.add(exp)
 
         return experiments
@@ -495,7 +486,7 @@ class OBCIServer(OBCIControlPeer):
             send_msg(sock, self.mtool.fill_msg("rq_error", err_code="process_not_found"))
         else:
             # TODO
-            name = proc.name
+            # name = proc.name
             proc.kill()
             proc.mark_delete()
             send_msg(sock, self.mtool.fill_msg("rq_ok"))
@@ -575,7 +566,6 @@ class OBCIServer(OBCIControlPeer):
         return sv_obj, False
 
     def _crash_extra_data(self, exception=None):
-        import json
         data = super(OBCIServer, self)._crash_extra_data(exception)
         data.update({
             'experiments': [e.info() for e in self.experiments.values()]

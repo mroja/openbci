@@ -11,19 +11,20 @@ _DESC_BASE_PATH = os.path.join(obci_root(), 'drivers/eeg/driver_discovery')
 
 _TYPES = ['Porti7', 'MobiMini', 'Mobi5']
 _BT_DESCS = {
-                'Porti7' : 'amplifier_porti7_bluetooth.json',
-                'MobiMini' : 'amplifier_mobimini.json',
-                'Mobi5' : 'amplifier_mobi5.json'
-            }
+    'Porti7': 'amplifier_porti7_bluetooth.json',
+    'MobiMini': 'amplifier_mobimini.json',
+                'Mobi5': 'amplifier_mobi5.json'
+}
 _AMP_PEER = 'drivers/eeg/cpp_amplifiers/amplifier_tmsi.py'
-_AMP_EXECUTABLE = 'drivers/eeg/cpp_amplifiers/tmsi_amplifier'
+_AMP_EXECUTABLE = 'tmsi_amplifier'
 _SCENARIO = 'scenarios/amplifier/tmsi_amp_signal.ini'
+
 
 def _find_bluetooth_amps():
     try:
-        nearby_devices = bluetooth.discover_devices(duration=3, lookup_names = True)
-    except bluetooth.BluetoothError, e:
-        print "ERROR:  ", str(e)
+        nearby_devices = bluetooth.discover_devices(duration=3, lookup_names=True)
+    except bluetooth.BluetoothError as e:
+        print("ERROR:  ", str(e))
         nearby_devices = []
 
     found = []
@@ -31,8 +32,9 @@ def _find_bluetooth_amps():
         is_amp, amp_type = _check_amp_name(name)
         if is_amp:
             found.append((addr, name, amp_type))
-    print "Found bluetooth devices: ", found
+    print("Found bluetooth devices: ", found)
     return found
+
 
 def _check_amp_name(name):
     amp_type = ''
@@ -46,7 +48,7 @@ def _check_amp_name(name):
     if len(parts) == 2:
         try:
             n = int(parts[1])
-        except Exception, e:
+        except Exception as e:
             pass
         else:
             name_ok = amp_type != ''
@@ -56,28 +58,28 @@ def _check_amp_name(name):
 def driver_descriptions():
     descriptions = []
     bt = _find_bluetooth_amps()
-    print bt
-    
+    print(bt)
+
     for amp in bt:
         desc = {
-                'experiment_info': {
-                    "launch_file_path" : _SCENARIO,
-                    'experiment_status' :{
-                                        'status_name' : READY_TO_LAUNCH
-                                }
-                                            },
-                'amplifier_peer_info' : {
-                                              'driver_executable' : _AMP_EXECUTABLE,
-                                              'path' : _AMP_PEER},
-                'amplifier_params' : {
-                                        'additional_params' : {'usb_device' : '',
-                                                                'bluetooth_device' : ''},
-                                        'active_channels' : '',
-                                        'channel_names' : '',
-                                        'sampling_rate' : ''},
+            'experiment_info': {
+                "launch_file_path": _SCENARIO,
+                'experiment_status': {
+                    'status_name': READY_TO_LAUNCH
                 }
+            },
+            'amplifier_peer_info': {
+                'driver_executable': _AMP_EXECUTABLE,
+                'path': _AMP_PEER},
+            'amplifier_params': {
+                'additional_params': {'usb_device': '',
+                                      'bluetooth_device': ''},
+                'active_channels': '',
+                'channel_names': '',
+                'sampling_rate': ''},
+        }
 
-        print amp, amp[0], amp[1]
+        print(amp, amp[0], amp[1])
         desc['amplifier_params']['additional_params']['bluetooth_device'] = amp[0]
         with open(os.path.join(_DESC_BASE_PATH, _BT_DESCS[amp[2]])) as f:
             desc['amplifier_params']['channels_info'] = json.load(f)

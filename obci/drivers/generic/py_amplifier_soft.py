@@ -1,11 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time, sys
+import time
+import sys
 
 from obci.drivers.generic import py_amplifier
 from obci.utils.openbci_logging import log_crash
 from obci.utils import streaming_debug
+
 
 class PyAmplifierSoft(py_amplifier.PyAmplifier):
 
@@ -14,8 +16,8 @@ class PyAmplifierSoft(py_amplifier.PyAmplifier):
         self._next_msg = None
         self._prev_ts = 0.0
         self._first_sample_ts = 0.0
-        self.sleep_time =(1.0/float(self.get_param('sampling_rate')))*self.samples_per_packet
-        self.debug = streaming_debug.Debug(int(self.config.get_param('sampling_rate')), 
+        self.sleep_time = (1.0 / float(self.get_param('sampling_rate'))) * self.samples_per_packet
+        self.debug = streaming_debug.Debug(int(self.config.get_param('sampling_rate')),
                                            self.logger,
                                            self.samples_per_packet)
 
@@ -27,7 +29,7 @@ class PyAmplifierSoft(py_amplifier.PyAmplifier):
             if s is None:
                 return s
             if ts is None:
-                ts = t + i*(self.sleep_time/self.samples_per_packet)
+                ts = t + i * (self.sleep_time / self.samples_per_packet)
             samples.append((s, ts))
 
         return self._create_msg(samples)
@@ -40,7 +42,7 @@ class PyAmplifierSoft(py_amplifier.PyAmplifier):
 
         return self._create_mx_msg(msg)
 
-    @log_crash            
+    @log_crash
     def do_sampling(self):
         msg = self._get_msg()
         self._first_sample_ts = msg.samples[0].timestamp
@@ -64,4 +66,3 @@ class PyAmplifierSoft(py_amplifier.PyAmplifier):
 
     def _post_send(self):
         pass
-

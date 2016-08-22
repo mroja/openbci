@@ -1,14 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import ConfigParser
+import configparser
 import json
-import io
 
-import obci.control.peer.peer_config as pc
 import obci.control.common.config_helpers as helpers
-
-
 
 
 class PeerConfigParser(object):
@@ -18,7 +14,7 @@ class PeerConfigParser(object):
         helpers.EXT_PARAMS,
         helpers.LOCAL_PARAMS,
         helpers.LAUNCH_DEPENDENCIES
-        ]
+    ]
 
     def parse(self, p_file, p_config_obj, update=False):
         self._prepare(p_file, p_config_obj, update)
@@ -48,7 +44,7 @@ class PeerConfigParser(object):
         sources = self._get_config_sources()
         for name, val in sources:
             self._check_source(name, val)
-            val = '' if val == None else val
+            val = '' if val is None else val
             self.config.set_config_source(name, val)
 
     def _get_launch_dependencies(self):
@@ -60,7 +56,7 @@ class PeerConfigParser(object):
         sources = self._get_launch_dependencies()
         for name, val in sources:
             self._check_source(name, val)
-            val = '' if val == None else val
+            val = '' if val is None else val
             self.config.set_launch_dependency(name, val)
 
     def _get_external_params(self):
@@ -86,12 +82,11 @@ class PeerConfigParser(object):
 
         exts = self._get_local_params()
         for name, val in exts:
-            v = '' if val == None else val
+            v = '' if val is None else val
             if self.update:
                 self.config.update_local_param(name, v)
             else:
                 self.config.add_local_param(name, v)
-
 
     def _check_has_section(self, name):
         pass
@@ -103,16 +98,15 @@ class PeerConfigParser(object):
         sections = self._get_sections()
 
         for sec in sections:
-            if not sec in self.config_parts:
+            if sec not in self.config_parts:
                 raise UnknownConfigSection(err_illegal_sec_name.format(sec))
 
         return True
 
     def _check_source(self, src_name, value):
-        if value is not None and value != '' and self.update == False:
+        if value is not None and value != '' and self.update is False:
             raise ConfigSourceError(err_config_source.format(src_name, value))
         return True
-
 
 
 class PeerConfigParserINI(PeerConfigParser):
@@ -123,8 +117,8 @@ class PeerConfigParserINI(PeerConfigParser):
         self.update = False
 
     def _prepare(self, p_file, p_config_obj, update=False):
-        self.parser = ConfigParser.RawConfigParser()
-        self.parser.readfp(p_file)
+        self.parser = configparser.RawConfigParser()
+        self.parser.read_file(p_file)
         self.config = p_config_obj
         self.update = update
 
@@ -144,9 +138,9 @@ class PeerConfigParserINI(PeerConfigParser):
         if self.parser.has_section(name):
             return True
         else:
-            #if not self.update:
+            # if not self.update:
             #    raise IncompleteConfigSections(err_no_section.format(name))
-            #else:
+            # else:
             return False
 
     def _get_sections(self):
@@ -154,6 +148,7 @@ class PeerConfigParserINI(PeerConfigParser):
 
 
 class PeerConfigParserJSON(PeerConfigParser):
+
     def __init__(self):
         self.load = None
         self.config = None
@@ -167,30 +162,29 @@ class PeerConfigParserJSON(PeerConfigParser):
         self.config = p_config_obj
         self.update = update
 
-        for key in [helpers.CONFIG_SOURCES, helpers.LAUNCH_DEPENDENCIES,\
-                        helpers.LOCAL_PARAMS, helpers.EXT_PARAMS]:
-            if self.load[key] is None:
+        for key in [helpers.CONFIG_SOURCES, helpers.LAUNCH_DEPENDENCIES,
+                    helpers.LOCAL_PARAMS, helpers.EXT_PARAMS]:
+            if self.load.setdefault(key) is None:
                 self.load[key] = {}
 
     def _get_config_sources(self):
-        return [(key, val) for (key, val) in \
-                    self.load[helpers.CONFIG_SOURCES].iteritems()]
+        return [(key, val) for (key, val) in
+                self.load[helpers.CONFIG_SOURCES].items()]
 
     def _get_launch_dependencies(self):
-        return [(key, val) for (key, val) in \
-                    self.load[helpers.LAUNCH_DEPENDENCIES].iteritems()]
+        return [(key, val) for (key, val) in
+                self.load[helpers.LAUNCH_DEPENDENCIES].items()]
 
     def _get_external_params(self):
-        return [(key, val) for (key, val) in \
-                    self.load[helpers.EXT_PARAMS].iteritems()]
+        return [(key, val) for (key, val) in
+                self.load[helpers.EXT_PARAMS].items()]
 
     def _get_local_params(self):
-        return [(key, val) for (key, val) in \
-                    self.load[helpers.LOCAL_PARAMS].iteritems()]
-
+        return [(key, val) for (key, val) in
+                self.load[helpers.LOCAL_PARAMS].items()]
 
     def _check_has_section(self, name):
-        if self.load.has_key(name):
+        if name in self.load:
             return True
         else:
             # if not self.update:
@@ -199,9 +193,11 @@ class PeerConfigParserJSON(PeerConfigParser):
             return False
 
     def _get_sections(self):
-        return self.load.keys()
+        return list(self.load.keys())
+
 
 class PeerConfigParserDict(PeerConfigParserJSON):
+
     def __init__(self):
         self.load = None
         self.config = None
@@ -212,8 +208,8 @@ class PeerConfigParserDict(PeerConfigParserJSON):
         if not isinstance(self.load, dict):
             raise ValueError("Expected a dictionary!")
 
-        for key in [helpers.CONFIG_SOURCES, helpers.LAUNCH_DEPENDENCIES,\
-                        helpers.LOCAL_PARAMS, helpers.EXT_PARAMS]:
+        for key in [helpers.CONFIG_SOURCES, helpers.LAUNCH_DEPENDENCIES,
+                    helpers.LOCAL_PARAMS, helpers.EXT_PARAMS]:
             if self.load[key] is None:
                 self.load[key] = {}
 
@@ -226,6 +222,7 @@ err_config_source = "Config source definitions should not have \
 values assigned in config file. Name: '{0}', illegal value: '{1}'."
 err_illegal_sec_name = "Illegal section name: '{0}'"
 
+
 class PeerConfigParserError(Exception):
     pass
     # def __init__(self, value=None):
@@ -237,23 +234,28 @@ class PeerConfigParserError(Exception):
     #     else:
     #         return repr(self)
 
+
 class ParserNotFoundError(PeerConfigParserError):
     pass
+
 
 class ConfigSourceError(PeerConfigParserError):
     pass
 
+
 class UnknownConfigSection(PeerConfigParserError):
     pass
+
 
 class IncompleteConfigSections(PeerConfigParserError):
     pass
 
 parsers = {
-    'ini' : PeerConfigParserINI,
+    'ini': PeerConfigParserINI,
     'json': PeerConfigParserJSON,
-    'python' : PeerConfigParserDict
+    'python': PeerConfigParserDict
 }
+
 
 def parser(parser_type):
     if parser_type not in parsers:

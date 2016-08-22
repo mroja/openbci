@@ -1,27 +1,29 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
-#
+#!/usr/bin/env python3
 # Author:
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
 #
-import numpy, copy
-import data_read_proxy
-import signal_logging as logger
-import signal_exceptions
+import numpy
+import copy
+from . import data_read_proxy
+from . import signal_logging as logger
+from . import signal_exceptions
 LOGGER = logger.get_logger("data_source", "info")
 
+
 class DataSource(object):
+
     def get_samples(self, p_from=None, p_len=None):
         LOGGER.error("The method must be subclassed")
 
     def iter_samples(self):
-        LOGGER.error("The method must be subclassed") 
+        LOGGER.error("The method must be subclassed")
+
     def __deepcopy(self, memo):
         return MemoryDataSource(copy.deepcopy(self.get_samples()))
 
 
-
 class MemoryDataSource(DataSource):
+
     def __init__(self, p_data=None, p_copy=True, p_sample_source='FLOAT'):
         self._data = None
 
@@ -41,7 +43,7 @@ class MemoryDataSource(DataSource):
         - ValueError if len(p_sample) doesn`t fit number_of_channels
         """
         self._data[:, p_sample_index] = p_sample
-            
+
     def get_samples(self, p_from=None, p_len=None):
         """
         Always success. If p_from or p_len is somehow out of range
@@ -50,29 +52,29 @@ class MemoryDataSource(DataSource):
         if p_from is None:
             return self._data
         else:
-            ret = self._data[:, p_from:(p_from+p_len)]
+            ret = self._data[:, p_from:(p_from + p_len)]
             if ret.shape[1] != p_len:
-                raise(signal_exceptions.NoNextValue())
+                raise signal_exceptions.NoNextValue()
             else:
                 return ret
 
     def iter_samples(self):
         for i in range(len(self._data[0])):
             yield self._data[:, i]
-    
+
 
 class FileDataSource(DataSource):
-    def __init__ (self, p_file, p_num_of_channels, p_sample_type="FLOAT"):
+
+    def __init__(self, p_file, p_num_of_channels, p_sample_type="FLOAT"):
         self._num_of_channels = p_num_of_channels
-        self._mem_source = None 
+        self._mem_source = None
         try:
-            ''+p_file
+            '' + p_file
             LOGGER.debug("Got file path.")
             self._data_proxy = data_read_proxy.DataReadProxy(p_file, sample_type=p_sample_type)
         except TypeError:
             LOGGER.debug("Got file proxy.")
             self._data_proxy = p_file
-
 
     def get_samples(self, p_from=None, p_len=None):
         if self._mem_source:
@@ -91,13 +93,13 @@ class FileDataSource(DataSource):
             # we dont have data in-memory
             # only a piece of data is requested
 
-            self._data_proxy.goto_value(p_from*self._num_of_channels)
-            d = self._data_proxy.get_next_values(self._num_of_channels*p_len)
-            return numpy.reshape(d, (self._num_of_channels, -1), 'f') 
-            
+            self._data_proxy.goto_value(p_from * self._num_of_channels)
+            d = self._data_proxy.get_next_values(self._num_of_channels * p_len)
+            return numpy.reshape(d, (self._num_of_channels, -1), 'f')
+
     def set_samples(self, samples, copy):
         if self._mem_source is None:
-            self._mem_source =  MemoryDataSource(samples, copy)
+            self._mem_source = MemoryDataSource(samples, copy)
         else:
             self._mem_source.set_samples(samples, copy)
 
@@ -114,4 +116,5 @@ class FileDataSource(DataSource):
                     samp[:] = self._data_proxy.get_next_values(self._num_of_channels)
                     yield samp
                 except signal_exceptions.NoNextValue:
+                    self._data_proxy.finish_reading()
                     break

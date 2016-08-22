@@ -1,16 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import sys
 
-from multiplexer.multiplexer_constants import peers, types
-from multiplexer.clients import BaseMultiplexerServer
-from obci.configs import settings, variables_pb2
+from obci.mx_legacy.clients import BaseMultiplexerServer
 
 from obci.control.peer.peer_control import PeerControl
 import obci.control.common.config_message as cmsg
 from obci.utils.openbci_logging import get_logger, log_crash
 
+
 class ConfiguredMultiplexerServer(BaseMultiplexerServer):
+
     @log_crash
     def __init__(self, addresses, type=None, external_config_file=None):
         super(ConfiguredMultiplexerServer, self).__init__(addresses, type)
@@ -20,13 +21,13 @@ class ConfiguredMultiplexerServer(BaseMultiplexerServer):
         self.config = PeerControl(peer=self)
 
         self.logger = get_logger(self.config.peer_id,
-                            file_level=self.get_param('file_log_level'),
-                            stream_level=self.get_param('console_log_level'),
-                            mx_level=self.get_param('mx_log_level'),
-                            sentry_level=self.get_param('sentry_log_level'),
-                            conn=self.conn,
-                            log_dir=self.get_param('log_dir'),
-                            obci_peer=self)
+                                 file_level=self.get_param('file_log_level'),
+                                 stream_level=self.get_param('console_log_level'),
+                                 mx_level=self.get_param('mx_log_level'),
+                                 sentry_level=self.get_param('sentry_log_level'),
+                                 conn=self.conn,
+                                 log_dir=self.get_param('log_dir'),
+                                 obci_peer=self)
         self.config.logger = self.logger
 
         self.config.connection = self.conn
@@ -34,7 +35,6 @@ class ConfiguredMultiplexerServer(BaseMultiplexerServer):
         self.config.peer_params_changed = self.params_changed
 
         result, details = self.config.initialize_config(self.conn)
-
 
         if not result:
             self.bad_initialization_result(result, details)
@@ -93,7 +93,7 @@ class ConfiguredMultiplexerServer(BaseMultiplexerServer):
         peer description to the crash report.
         Should return string."""
         return "peer '%s' config params: %s" % (self.config.peer_id,
-                                            self._param_vals())
+                                                self._param_vals())
 
     def _crash_extra_data(self, exc=None):
         """This method is called when the peer crashes, to provide additional
@@ -101,11 +101,11 @@ class ConfiguredMultiplexerServer(BaseMultiplexerServer):
         Should return a dictionary."""
 
         return {
-            "config_params" : self._param_vals(),
+            "config_params": self._param_vals(),
             "peer_id": self.config.peer_id,
             "experiment_uuid": self.get_param("experiment_uuid")
         }
 
     def _crash_extra_tags(self, exception=None):
-        return {'obci_part' : 'obci',
+        return {'obci_part': 'obci',
                 "experiment_uuid": self.get_param("experiment_uuid")}

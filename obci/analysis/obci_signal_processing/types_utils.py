@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
 # Project was initiated by Magdalena Michalska and Krzysztof Kulewski
@@ -23,8 +23,10 @@
 #
 
 STR = ''
+
+
 def to_string(p_object):
-    """Convert p_object to string. Convert strings to strings, 
+    """Convert p_object to string. Convert strings to strings,
     floats to string with accurate precision etc."""
     try:
         p_object + STR
@@ -34,6 +36,6 @@ def to_string(p_object):
         pass
 
     if isinstance(p_object, float):
-        return repr(p_object) #Prevail precision
+        return repr(p_object)  # Prevail precision
     else:
         return str(p_object)

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import obci_log_model
+from . import obci_log_model
 import time
 import socket
 import select
@@ -28,12 +28,12 @@ class RealLogModel(obci_log_model.LogModel):
                 return self._process_log(data)
             else:
                 raise Exception("Socket timeout!")
-        except Exception, e:
+        except Exception as e:
             return None, None
 
     def _process_log(self, data):
         try:
-            d = json.loads(data)
+            d = json.loads(data.decode())
         except Exception:
             print("Error while loading log as json....!")
             return None, None

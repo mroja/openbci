@@ -1,7 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, absolute_import
 
 import threading
 import subprocess
@@ -20,7 +19,7 @@ from obci.control.launcher.process_io_handler import start_stdio_handler
 from obci.control.launcher.local_process import LocalProcess
 from obci.control.launcher.remote_process import RemoteProcess
 from obci.control.launcher.process import (FAILED, FINISHED, TERMINATED, UNKNOWN,
-    PING, RETURNCODE)
+                                           PING, RETURNCODE)
 
 
 NO_STDIO = 0
@@ -30,7 +29,7 @@ STDIN = 4
 
 STDIO = [NO_STDIO, STDOUT, STDERR, STDIN]
 
-PYTHON_CALL = ['obci_run_proxy']
+PYTHON_CALL = ['obci_run_peer']
 
 REGISTER_TIMEOUT = 3
 
@@ -54,7 +53,7 @@ class SubprocessMonitor(object):
     def not_running_processes(self):
         status = {}
         with self._proc_lock:
-            for key, proc in self._processes.iteritems():
+            for key, proc in self._processes.items():
                 st = proc.status()
                 if st[0] in [FINISHED, FAILED, TERMINATED] and not proc.marked_delete():
                     status[key] = st
@@ -90,7 +89,7 @@ class SubprocessMonitor(object):
 
     def delete_all(self):
         with self._proc_lock:
-            for proc in self._processes.values():
+            for proc in list(self._processes.values()):
                 del proc
             self._processes = {}
 
@@ -322,4 +321,3 @@ class TimeoutDescription(object):
 
 def default_timeout_handler():
     return TimeoutDescription()
-

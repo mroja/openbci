@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 
-import warnings
-import os
 import codecs
 import logging
 
-from obci.control.common.config_helpers import *
+from obci.control.common.config_helpers import (CONFIG_SOURCES,
+                                                LAUNCH_DEPENDENCIES,
+                                                LOCAL_PARAMS,
+                                                EXT_PARAMS)
 import obci.control.launcher.launcher_tools as launcher_tools
 from obci.control.peer.peer_config_serializer import PeerConfigSerializerCmd
 from obci.control import peer
@@ -88,7 +89,7 @@ class OBCIExperimentConfig(object):
         self.set_peer_machine(peer_id, machine)
 
         if config_sources:
-            for src_name, src_id in config_sources.iteritems():
+            for src_name, src_id in config_sources.items():
                 self.set_config_source(peer_id, src_name, src_id)
         else:
             for src in peer_cfg.config_sources:
@@ -96,7 +97,7 @@ class OBCIExperimentConfig(object):
                     self.set_config_source(peer_id, src, src)
 
         if launch_deps:
-            for dep_name, dep_id in launch_deps.iteritems():
+            for dep_name, dep_id in launch_deps.items():
                 self.set_launch_dependency(peer_id, dep_name, dep_id)
         else:
             for dep in peer_cfg.launch_deps:
@@ -104,7 +105,7 @@ class OBCIExperimentConfig(object):
                     self.set_launch_dependency(peer_id, dep, dep)
 
         if param_overwrites:
-            for par, val in param_overwrites.iteritems():
+            for par, val in param_overwrites.items():
                 self.update_local_param(peer_id, par, val)
 
         return override
@@ -242,7 +243,7 @@ class OBCIExperimentConfig(object):
             ngs = meth()
             # print "$$$$$$$$$$$$$$$$$$", p.peer_id, ngs, neighbours_method
             # print p.config
-            if not p in vs:
+            if p not in vs:
                 # print "create vertex for ", p.peer_id,
                 ver_p = Vertex(gr, p)
                 vs[p] = ver_p
@@ -250,7 +251,7 @@ class OBCIExperimentConfig(object):
                 # print "vvvv:    ", gr.vertices()
             for ne in ngs:
                 pr = self.peers[ne]
-                if not pr in vs:
+                if pr not in vs:
                     # print "create second vertex for", pr.peer_id,
                     ver_ng = Vertex(gr, pr)
                     vs[pr] = ver_ng
@@ -333,7 +334,7 @@ class PeerConfigDescription(object):
                 val in self.config.used_config_sources()]
 
     def list_launch_deps(self):
-        return self.config.launch_deps.values()
+        return list(self.config.launch_deps.values())
 
     def status(self, peer_status_obj):
         det = {}

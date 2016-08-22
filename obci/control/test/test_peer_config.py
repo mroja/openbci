@@ -9,10 +9,9 @@ from obci.control.peer import peer_config
 class TestPeerConfig(object):
 
     def setup(self):
-        self.pc = peer_config.PeerConfig()
+        self.pc = peer_config.PeerConfig(warn_overwrite=True)
 
-########
-
+#
 
     def test_set_config_source(self):
         self.pc.set_config_source("sig_src", peer_id="aaa")
@@ -33,8 +32,7 @@ class TestPeerConfig(object):
     def test_set_config_source_name_not_string(self):
         self.pc.set_config_source(None, peer_id="aaa")
 
-#######
-
+#
 
     def test_add_external_param_def(self):
         self.pc.set_config_source("source_n")
@@ -49,7 +47,6 @@ class TestPeerConfig(object):
             self.pc.add_external_param_def("some_param", "source_n.src_param")
             self.pc.add_external_param_def("some_param", "source_n.other")
 
-
     def test_add_external_param_def_overwrite2(self):
         self.pc.set_config_source("source_n")
         self.pc.add_external_param_def("some_param", "source_n.src_param")
@@ -58,7 +55,6 @@ class TestPeerConfig(object):
             self.pc.add_external_param_def("some_param", "source_n.other")
         assert repr(self.pc.ext_param_defs) == "{'some_param': ('source_n', 'other')}"
         assert repr(self.pc.param_values) == "{'some_param': None}"
-
 
     @raises(peer_config.ConfigOverwriteWarning)
     def test_add_external_param_def_local_exists(self):
@@ -95,7 +91,7 @@ class TestPeerConfig(object):
         self.pc.set_config_source("source_n")
         self.pc.add_external_param_def("", "source_n.src_param")
 
-########
+#
 
     def test_update_external_param_def(self):
         self.pc.set_config_source("source_n")
@@ -111,13 +107,12 @@ class TestPeerConfig(object):
     #         warnings.simplefilter('error')
     #         self.pc.update_external_param_def("some_param", "source_n.other")
 
-
     @raises(ValueError)
     def test_update_external_param_def_param_not_defined(self):
         self.pc.set_config_source("source_n")
         self.pc.update_external_param_def("some_param", "source_n.other")
 
-########
+#
 
     def test_set_external_param(self):
         self.pc.set_config_source("source_n")
@@ -136,7 +131,7 @@ class TestPeerConfig(object):
     def test_set_external_param_no_def(self):
         self.pc._set_external_param("some_param", "some_value")
 
-########
+#
 
     def test_add_local_param(self):
         self.pc.add_local_param("par", "val")
@@ -165,33 +160,32 @@ class TestPeerConfig(object):
         assert self.pc.ext_param_defs == {}
 
 
-#######
+#
 
     def test_update_local_param(self):
         self.pc.add_local_param("par", "val")
         self.pc.update_local_param("par", "new_val")
         assert repr(self.pc.param_values) == "{'par': 'new_val'}"
 
-
     @raises(ValueError)
     def test_update_local_param_not_exists(self):
         self.pc.update_local_param("par", "new_val")
 
-#######
+#
 
     def test_used_config_sources(self):
         self.pc.set_config_source("source_n")
         self.pc.add_external_param_def("par", "source_n.other")
         assert self.pc.used_config_sources() == ["source_n"]
 
-#######
+#
 
     def test_unassigned_config_sources(self):
         self.pc.set_config_source("source_n")
         self.pc.set_config_source("aaaa", "some_module_id")
         assert self.pc.unassigned_config_sources() == ["source_n"]
 
-#######
+#
 
     def test_unused_config_sources(self):
         self.pc.set_config_source("source_n")
@@ -200,12 +194,10 @@ class TestPeerConfig(object):
         assert self.pc.unused_config_sources() == ["aaaa"]
 
 
-
-
 # def test():
 #     print __file__
 #     assert 0
 
-## init vs. update
-## config_sources + ids
-## unused_config_sources
+# init vs. update
+# config_sources + ids
+# unused_config_sources

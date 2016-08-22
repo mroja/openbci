@@ -10,7 +10,7 @@ class OBCIView(object):
         """
         if msg is None:
             msg = str(msg)
-        if isinstance(msg, basestring):
+        if isinstance(msg, str):
             formatter = self._view_str
         else:
             formatter = self.view_raw
@@ -39,7 +39,7 @@ class OBCIView(object):
 class OBCIViewText(OBCIView):
 
     def _show(self, formatted_msg, where=None):
-        print formatted_msg
+        print(formatted_msg)
 
     def format_default(self, msg):
         lst = []
@@ -48,12 +48,11 @@ class OBCIViewText(OBCIView):
         return ''.join(lst)
 
     def view_raw(self, msg, where=None):
-        print msg.raw()
+        print(msg.raw())
 
     def _format_msg(self, msg, lst, depth):
         if isinstance(msg, dict):
-            for key in msg.keys():
-                val = msg[key]
+            for key, val in msg.items():
                 lst += ['\n', '   ' * depth, key, ':  ']
                 self._format_msg(val, lst, depth + 1)
         elif isinstance(msg, list):

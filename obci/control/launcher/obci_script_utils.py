@@ -15,6 +15,8 @@ import obci.control.common.obci_control_settings as settings
 import obci.control.launcher.obci_client as obci_client
 import obci.control.launcher.view as view
 
+from obci.control.common.config_helpers import OBCISystemError
+
 disp = view.OBCIViewText()
 
 
@@ -22,8 +24,8 @@ def launch_obci_server(args=[]):
     # assume 'obci_server' command is available
     try:
         srv = subprocess.Popen(['obci_server'] + list(args))
-    except Exception, e:
-        print 'Server launch error:', str(e)
+    except Exception as e:
+        print('Server launch error:', str(e))
         return None
     return srv
 
@@ -42,7 +44,7 @@ def server_process_running(expected_dead=False):
     for i in range(5):
         try:
             sock.connect((socket.gethostname(), int(net.server_rep_port())))
-        except socket.error, e:
+        except socket.error as e:
             if e.errno == errno.ECONNREFUSED:
                 running = False
                 if expected_dead:
@@ -51,7 +53,7 @@ def server_process_running(expected_dead=False):
                 running = True
                 break
             else:
-                print str(e)
+                print(e)
         else:
             running = True
             break
@@ -67,7 +69,7 @@ def connect_client(addresses, client=None, client_class=obci_client.OBCIClient, 
         ctx = zmq_ctx or zmq.Context()
         try:
             client = client_class(addresses, ctx)
-        except Exception, e:
+        except Exception as e:
             print("client creation error: ", str(e))
             return None, None
     result = client.ping_server(timeout=9000)
@@ -79,7 +81,7 @@ def client_server_prep(cmdargs=None, client_class=obci_client.OBCIClient, server
 
     directory = os.path.abspath(settings.DEFAULT_SANDBOX_DIR)
     if not os.path.exists(directory):
-        print "obci directory not found: {0}".format(directory)
+        print("obci directory not found: {0}".format(directory))
         raise OBCISystemError()
 
     client = None
@@ -103,7 +105,7 @@ def client_server_prep(cmdargs=None, client_class=obci_client.OBCIClient, server
     if not server_process_running() and\
             (not server_ip or server_ip == net.lo_ip())\
             and start_srv:
-        print "will launch server"
+        print("will launch server")
         args = argv() if cmdargs else []
         if rep_addrs and pub_addrs:
             args += ['--rep-addresses'] + rep_addrs + ['--pub-addresses'] + pub_addrs

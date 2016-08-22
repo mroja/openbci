@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from obci.control.launcher.launcher_tools import NOT_READY, READY_TO_LAUNCH, LAUNCHING, \

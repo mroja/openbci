@@ -1,12 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from multiplexer.clients import connect_client
-
-from obci.control.peer.peer_control import PeerControl, ConfigNotReadyError
-import obci.control.common.config_message as cmsg
-from obci.utils.openbci_logging import get_logger, log_crash
 import sys
+
+from obci.mx_legacy.clients import connect_client
+from obci.control.peer.peer_control import PeerControl
+from obci.utils.openbci_logging import get_logger, log_crash
+
 
 class ConfiguredClient(object):
 
@@ -19,13 +19,13 @@ class ConfiguredClient(object):
         self.config = PeerControl(peer=self)
 
         self.logger = get_logger(self.config.peer_id,
-                            file_level=self.get_param('file_log_level'),
-                            stream_level=self.get_param('console_log_level'),
-                            mx_level=self.get_param('mx_log_level'),
-                            sentry_level=self.get_param('sentry_log_level'),
-                            conn=self.conn,
-                            log_dir=self.get_param('log_dir'),
-                            obci_peer=self)
+                                 file_level=self.get_param('file_log_level'),
+                                 stream_level=self.get_param('console_log_level'),
+                                 mx_level=self.get_param('mx_log_level'),
+                                 sentry_level=self.get_param('sentry_log_level'),
+                                 conn=self.conn,
+                                 log_dir=self.get_param('log_dir'),
+                                 obci_peer=self)
         self.config.logger = self.logger
 
         self.config.connection = self.conn
@@ -35,7 +35,7 @@ class ConfiguredClient(object):
 
         if not result:
             self.logger.critical(
-                        'Config initialisation FAILED: {0}'.format(details))
+                'Config initialisation FAILED: {0}'.format(details))
             sys.exit(1)
         else:
             self.validate_params(self.config.param_values())
@@ -71,7 +71,7 @@ class ConfiguredClient(object):
 
     def _crash_extra_description(self, exc=None):
         return "peer %s config params: %s" % (self.config.peer_id,
-                                                self._param_vals())
+                                              self._param_vals())
 
     def _crash_extra_data(self, exc=None):
         """This method is called when the peer crashes, to provide additional
@@ -79,11 +79,11 @@ class ConfiguredClient(object):
         Should return a dictionary."""
 
         return {
-            "config_params" : self._param_vals(),
+            "config_params": self._param_vals(),
             "peer_id": self.config.peer_id,
             "experiment_uuid": self.get_param("experiment_uuid")
         }
 
     def _crash_extra_tags(self, exception=None):
-        return {'obci_part' : 'obci',
+        return {'obci_part': 'obci',
                 "experiment_uuid": self.get_param("experiment_uuid")}

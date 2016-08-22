@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Author:
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
@@ -9,10 +9,10 @@ set logging level. Change logging.INFO lines to change logging level."""
 import os
 import sys
 import traceback
+import functools
 import logging
 import logging.handlers
 
-import decorator
 import inspect
 
 
@@ -29,16 +29,17 @@ BACKUP_COUNT = 2
 
 USE_SENTRY = os.environ.get('SENTRY_DSN', False)
 
-if USE_SENTRY == False:
-    try:                                                                                          
-        parser = SafeConfigParser()
+if not USE_SENTRY:
+    try:
+        from configparser import ConfigParser
+        parser = ConfigParser()
         parser.read('/etc/default/openbci')
         send_logs = parser.get('sentry', 'send_logs')
         if send_logs == 'true':
             USE_SENTRY = parser.get('sentry', 'key')
             if USE_SENTRY == '':
                 USE_SENTRY = False
-    except:
+    except Exception:
         pass
 
 
@@ -47,8 +48,10 @@ try:
     from raven.handlers.logging import SentryHandler
     from raven.conf import setup_logging
 except ImportError:
-    print "raven-python modules not found, log messages will not be sent to Sentry"
+    # import warnings
+    # warnings.warn("raven-python modules not found, log messages will not be sent to Sentry", UserWarning)
     USE_SENTRY = False
+
     def _sentry_handler(sentry_key=None, obci_peer=None):
         return None
 else:
@@ -59,10 +62,10 @@ else:
             self.peer = obci_peer
 
         def build_msg(self, event_type, data=None, date=None,
-                  time_spent=None, extra=None, stack=None, public_key=None,
-                  tags=None, **kwargs):
+                      time_spent=None, extra=None, stack=None, public_key=None,
+                      tags=None, **kwargs):
             data = super(OBCISentryClient, self).build_msg(event_type, data, date, time_spent,
-                extra, stack, public_key, tags, **kwargs)
+                                                           extra, stack, public_key, tags, **kwargs)
 
             tst = data.get('tags', None)
             if not tst:
@@ -83,7 +86,7 @@ else:
     def _sentry_handler(sentry_key=None, obci_peer=None):
         try:
             client = OBCISentryClient(sentry_key, obci_peer=obci_peer, auto_log_stacks=True)
-        except ValueError, e:
+        except ValueError as e:
             print('logging setup: initializing sentry failed - ', e.args)
             return None
         handler = SentryHandler(client)
@@ -96,16 +99,17 @@ else:
 
 def console_formatter():
     return logging.Formatter(
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
 
 def file_formatter():
     return logging.Formatter(
-                    "%(asctime)s - %(name)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s")
+        "%(asctime)s - %(name)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s")
+
 
 def mx_formatter():
     return logging.Formatter(
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def get_dummy_logger(p_name, p_level='info'):
@@ -130,8 +134,8 @@ def get_dummy_logger(p_name, p_level='info'):
 
 
 def get_logger(name, file_level='debug', stream_level='warning',
-                            mx_level='warning', sentry_level='error',
-                            conn=None, log_dir=None, obci_peer=None):
+               mx_level='warning', sentry_level='error',
+               conn=None, log_dir=None, obci_peer=None):
     """Return logger with name as name. And logging level p_level.
     p_level should be in (starting with the most talkactive):
     'debug', 'info', 'warning', 'error', 'critical'."""
@@ -160,15 +164,14 @@ def get_logger(name, file_level='debug', stream_level='warning',
             mxhandler.setFormatter(mx_formatter())
             logger.addHandler(mxhandler)
 
-
         if log_dir is not None:
             log_dir = os.path.expanduser(log_dir)
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
             fhandler = logging.handlers.RotatingFileHandler(
-                                    os.path.join(log_dir, name + ".log"),
-                                    maxBytes=MAX_FILE_SIZE_B,
-                                    backupCount=BACKUP_COUNT)
+                os.path.join(log_dir, name + ".log"),
+                maxBytes=MAX_FILE_SIZE_B,
+                backupCount=BACKUP_COUNT)
             fhandler.setFormatter(formatter)
             fhandler.setLevel(LEVELS[file_level])
             fhandler.setFormatter(file_formatter())
@@ -186,28 +189,29 @@ def get_logger(name, file_level='debug', stream_level='warning',
     return logger
 
 
-@decorator.decorator
-def log_crash(meth, *args, **kwargs):
-    try:
-        return meth(*args, **kwargs)
-    except Exception, e:
-        self = args[0]
-        # print "self:   ", self
-        if hasattr(self, 'logger'):
-            info = sys.exc_info()
-            frames = inspect.getouterframes(info[2].tb_frame)
-            extra_obj = _find_extra_obj(frames)
+def log_crash(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            self = args[0]
+            # print "self:   ", self
+            if hasattr(self, 'logger'):
+                info = sys.exc_info()
+                frames = inspect.getouterframes(info[2].tb_frame)
+                extra_obj = _find_extra_obj(frames)
 
-            msg = crash_log_msg(meth, args, kwargs, extra_obj, info, e)
-            extra = { 'data' : {}, 'tags' : {}}
-            extra['data'].update(crash_log_data(e, extra_obj))
-            extra['tags'].update(crash_log_tags(e, extra_obj))
-            extra['culprit'] = caller_name(skip=2)
-            self.logger.critical(msg, exc_info=True, extra=extra)
-            del info
-            del frames
-
-        raise(e)
+                msg = crash_log_msg(func, args, kwargs, extra_obj, info, e)
+                extra = {'data': {}, 'tags': {}}
+                extra['data'].update(crash_log_data(e, extra_obj))
+                extra['tags'].update(crash_log_tags(e, extra_obj))
+                extra['culprit'] = caller_name(skip=2)
+                self.logger.critical(msg, exc_info=True, extra=extra)
+                del info
+                del frames
+            raise e
+    return wrapper
 
 
 def _find_extra_obj(frames):
@@ -220,12 +224,12 @@ def _find_extra_obj(frames):
     return None
 
 
-
 def crash_log_tags(exception, callee):
     if hasattr(callee, '_crash_extra_tags'):
         return callee._crash_extra_tags(exception)
     else:
         return {}
+
 
 def crash_log_msg(func, args, kwargs, callee=None, exc_info=None, exception=None):
     msg = ' \n\n  CRASH INFO:\n'
@@ -243,6 +247,7 @@ def crash_log_msg(func, args, kwargs, callee=None, exc_info=None, exception=None
         msg += "\n\n" + callee._crash_extra_description(exception)
     del exc_info
     return msg
+
 
 def crash_log_data(exception, callee):
     if hasattr(callee, '_crash_extra_data'):
@@ -280,9 +285,6 @@ def caller_name(skip=2):
         name.append(parentframe.f_locals['self'].__class__.__name__)
     codename = parentframe.f_code.co_name
     if codename != '<module>':  # top level usually
-        name.append( codename ) # function or a method
+        name.append(codename)  # function or a method
     del parentframe
     return ".".join(name)
-
-
-

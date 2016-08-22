@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
-#
+#!/usr/bin/env python3
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
 # Project was initiated by Magdalena Michalska and Krzysztof Kulewski
 # as part of their MSc theses at the University of Warsaw.
@@ -23,24 +21,35 @@
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
 #
 
+
 class NoNextValue(Exception):
+
     """Raised when end of data file is met in self.get_next_value()."""
     pass
 
+
 class NoNextTag(Exception):
+
     """Raised when end of tag file is met in self.get_next_tag()."""
     pass
 
+
 class NoParameter(Exception):
-    """Raised when a ther is a requrest for non-existing parameter in 
+
+    """Raised when a ther is a requrest for non-existing parameter in
     info file."""
+
     def __init__(self, p_param):
         self._param = p_param
+
     def __str__(self):
-        return "No parameter '"+self._param+"' was found in info source!"
+        return "No parameter '" + self._param + "' was found in info source!"
+
 
 class BadSampleFormat(Exception):
-    """An exception that should be raised when data sample has arrived and it is not float (struct is unable to pack it)."""
+
+    """An exception that should be raised when data sample has arrived and it is not
+    float (struct is unable to pack it)."""
+
     def __str__(self):
         return "Error! Received data sample is not of 'float' type! Writing to file aborted!"
-

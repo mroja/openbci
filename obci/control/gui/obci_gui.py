@@ -1,12 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-from __future__ import print_function, absolute_import
 
 import os
 import sys
 import socket
-import codecs
 import json
 import time
 import getopt
@@ -14,8 +11,10 @@ import getopt
 import sip
 
 import PyQt4.QtGui
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt4.QtCore import Qt, pyqtSignal
+from PyQt4.QtGui import (QApplication, QMainWindow, QMessageBox, QFileDialog, QDialog, QColor,
+                         QBrush, QComboBox, QTreeWidgetItem, QAbstractItemView, QFont, QHeaderView,
+                         QTableWidgetItem, QDialogButtonBox, QProgressDialog)
 
 
 from obci.control.gui.obci_window import Ui_OBCILauncher
@@ -27,10 +26,10 @@ from obci.drivers.eeg.driver_discovery import driver_discovery
 
 from obci.control.gui.obci_launcher_engine import OBCILauncherEngine, USER_CATEGORY
 from obci.control.gui.obci_launcher_constants import STATUS_COLORS
-from obci.control.gui.experiment_engine_info import MODE_BASIC, MODE_ADVANCED, MODES
+from obci.control.gui.experiment_engine_info import MODE_ADVANCED, MODES
 import obci.control.launcher.obci_script_utils as obci_script_utils
-from obci.control.launcher.launcher_tools import NOT_READY, READY_TO_LAUNCH, LAUNCHING, \
-    FAILED_LAUNCH, RUNNING, FINISHED, FAILED, TERMINATED
+from obci.control.launcher.launcher_tools import READY_TO_LAUNCH, LAUNCHING, \
+    RUNNING, FAILED, TERMINATED
 
 import obci.control.common.obci_control_settings as settings
 from obci.control.common.message import LauncherMessage
@@ -117,9 +116,13 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         self.setupActions()
         self.update_user_interface(None)
         self.showMaximized()
-        if os.environ.get('OBCI_INSTALL_DIR') != None:
-            PyQt4.QtGui.QMessageBox.information(self, "Non standard OpenBCI directory",
-                                                "OpenBCI is launched from local directory: " + os.environ.get('OBCI_INSTALL_DIR') + ', to start default package version launch "obci_local_remove" in terminal.')
+        if os.environ.get('OBCI_INSTALL_DIR') is not None:
+            PyQt4.QtGui.QMessageBox.information(
+                self,
+                "Non standard OpenBCI directory",
+                "OpenBCI is launched from local directory: " +
+                os.environ.get('OBCI_INSTALL_DIR') +
+                ', to start default package version launch "obci_local_remove" in terminal.')
 
     @log_crash
     def closeEvent(self, e):
@@ -140,7 +143,7 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         return {'obci_part': 'launcher'}
 
     def stop_logs(self):
-        for i, st in self.exp_states.iteritems():
+        for i, st in self.exp_states.items():
             st.log_model.stop_running()
 
     @log_crash
@@ -240,7 +243,7 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
 
     @log_crash
     def setScenarios(self, scenarios):
-        scenarios.sort(cmp=lambda a, b: str(a.name) > str(b.name))
+        scenarios.sort(key=lambda a: a.name, reverse=True)
         self._scenarios = scenarios
         self.scenarios.setSortingEnabled(True)
         self.scenarios.clear()
@@ -250,11 +253,11 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         for i, s in enumerate(scenarios):
             cat = s.category
             treecat = None
-            names = [unicode(c.text(0)) for c in self.categories]
+            names = [c.text(0) for c in self.categories]
             if cat not in names:
-                treecat = ObciTreeWidgetItem([QString(str(cat))], None)
+                treecat = ObciTreeWidgetItem([cat], None)
 
-                treecat.setText(0, QString(str(cat)))
+                treecat.setText(0, cat)
                 self.categories.append(treecat)
                 self.scenarios.addTopLevelItem(treecat)
                 treecat.setExpanded(False)
@@ -267,7 +270,7 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
                 name.setBackground(0, QColor(STATUS_COLORS[s.status.status_name]))
                 name.setBackground(1, QColor(STATUS_COLORS[s.status.status_name]))
             treecat.addChild(name)
-            name.setToolTip(0, QString(s.launch_file))
+            name.setToolTip(0, s.launch_file)
         self.scenarios.sortItems(0, Qt.AscendingOrder)
 
     def getScenarios(self):
@@ -282,7 +285,7 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         experiment = experiment.exp
         print("********************")
         print("Machine/peer from current experiment " + str(experiment.uuid) + ":")
-        for peer_id, peer in experiment.exp_config.peers.iteritems():
+        for peer_id, peer in experiment.exp_config.peers.items():
             st = experiment.status.peer_status(peer_id).status_name
             mch = str(peer.machine)
             if mch not in self._nearby_machines.values():
@@ -294,12 +297,12 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
             parent.setBackground(0, QBrush(QColor(STATUS_COLORS[st])))
             parent.setBackground(1, QBrush(QColor(STATUS_COLORS[st])))
             parent.setBackground(2, QBrush(QColor(STATUS_COLORS[st])))
-            parent.setToolTip(0, unicode(peer.path))
+            parent.setToolTip(0, str(peer.path))
 
             combo = QComboBox()
-            combo.addItems(self._nearby_machines.values())
+            combo.addItems(list(self._nearby_machines.values()))
             if mch in self._nearby_machines.values():
-                index = self._nearby_machines.values().index(mch)
+                index = list(self._nearby_machines.values()).index(mch)
                 combo.setCurrentIndex(index)
 
             self.parameters.addTopLevelItem(parent)
@@ -316,8 +319,8 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
                 parent.setToolTip(0, peer.path)
 
             params = experiment.parameters(peer_id, self.details_mode.currentText())
-            for param, (value, src) in params.iteritems():
-                val = unicode(value)  # if not src else value + "  ["+src + ']'
+            for param, (value, src) in params.items():
+                val = str(value)  # if not src else value + "  ["+src + ']'
                 src = src if src else ''
                 child = QTreeWidgetItem([param, val, src])
                 if src:
@@ -350,8 +353,8 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
             if parent.isExpanded():
                 expanded.add(parent.text(0))
 
-            for j, param in enumerate(peer.config.local_params.keys()):
-                child = parent.child(j)
+            # for j, param in enumerate(peer.config.local_params.keys()):
+            #     child = parent.child(j)
 
         state.expanded_peers = expanded
         return self._params
@@ -377,22 +380,22 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
     def _itemChanged(self, item, column):
         changed = False
         if item.parent() is None:
-            peer_id = unicode(item.text(0))
+            peer_id = item.text(0)
             if column == 2:
                 combo_box = self.parameters.itemWidget(item, column)
-                machine = unicode(combo_box.currentText())
+                machine = combo_box.currentText()
                 old_ma = self._params.exp.exp_config.peer_machine(peer_id)
                 if old_ma != machine:
                     self._params.exp.exp_config.update_peer_machine(peer_id, machine)
                     changed = True
         else:
             exp_state = self._params
-            peer_id = unicode(item.parent().text(0))
-            param = unicode(item.text(0))
-            val = unicode(item.text(1))
+            peer_id = item.parent().text(0)
+            param = item.text(0)
+            val = item.text(1)
 
             old_val = exp_state.exp.exp_config.param_value(peer_id, param)
-            if old_val != unicode(item.text(1)):
+            if old_val != item.text(1):
                 exp_state.exp.update_peer_param(peer_id, param, val)
                 changed = True
 
@@ -423,10 +426,10 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
     def _start(self):
         uid = str(self.scenarios.currentItem().uuid)
         if self.store_checkBox.isChecked():
-            store_options = {u'save_file_name': unicode(self.store_file.text().toUtf8(), 'utf-8'),
-                             u'save_file_path': unicode(self.store_dir.text().toUtf8(), 'utf-8'),
-                             u'append_timestamp':  unicode(1 if self.store_ts_checkBox.isChecked() else 0),
-                             u'store_locally': 1 if self.store_local_checkBox.isChecked() else 0
+            store_options = {'save_file_name': self.store_file.text(),
+                             'save_file_path': self.store_dir.text(),
+                             'append_timestamp': str(int(self.store_ts_checkBox.isChecked())),
+                             'store_locally': str(int(self.store_local_checkBox.isChecked()))
                              }
             self.exp_states[uid].store_options = store_options
         else:
@@ -440,7 +443,8 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         print("obciLauncher._stop - begin uid: " + str(uid))
         state = self.exp_states[uid]
         if state.stopping:
-            print("Warning!!! - tried to perform stop action again on the same experiment ................................... Ignore")
+            print(
+                "Warning!!! - tried to perform stop action again on the same experiment ....................... Ignore")
             return
         state.stopping = True
         state.log_model.stop_running()
@@ -450,9 +454,9 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
 
     def _amp_select(self):
         p = {'path': 'drivers/eeg/cpp_amplifiers/amplifier_tmsi.py'}
-        d = {'usb_device': '/dev/tmsi0', 'driver_executable': 'drivers/eeg/cpp_amplifiers/tmsi_amplifier'}
+        d = {'usb_device': '/dev/tmsi0', 'driver_executable': 'tmsi_amplifier'}
         uuid = str(self.scenarios.currentItem().uuid)
-        si = self.scenarios.currentItem()
+        # si = self.scenarios.currentItem()
         # exp = self.exp_states[uuid].exp
         exp = self.exp_states[uuid]
         peers = exp.exp.exp_config.peers
@@ -462,14 +466,14 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         print(dir(exp.exp))
         print(exp.exp.exp_config)
         print(dir(exp.exp.exp_config))
-        cfg = exp.exp.exp_config
+        # cfg = exp.exp.exp_config
         # cfg.get_pee
         a = peers['amplifier']
         print(peers['amplifier'])
         print(dir(peers['amplifier']))
         print(a.public_params)
         peers['amplifier'].path = p['path']
-        for k, v in d.iteritems():
+        for k, v in d.items():
             print(k, v)
             a.config.update_local_param(k, v)
         self._setParams(exp)
@@ -479,11 +483,13 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
     @log_crash
     def _saver_msg(self, killer_proc):
         print("GUI SAVER MSG")
-        reply = QMessageBox.question(self, 'Signal saving',
-                                     "Signal saving is taking quite some time. This is normal for longer EEG sessions.\n"
-                                     "Continue saving?",
-                                     QMessageBox.Yes | QMessageBox.No,
-                                     QMessageBox.Yes)
+        reply = QMessageBox.question(
+            self,
+            'Signal saving',
+            "Signal saving is taking quite some time. This is normal for longer EEG sessions.\n"
+            "Continue saving?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes)
         killer_proc.poll()
         if reply == QMessageBox.No and killer_proc.returncode is None:
             print("KILLING")
@@ -513,7 +519,7 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
         amp = peers['amplifier']
 
         amp.path = path
-        for k, v in params.iteritems():
+        for k, v in params.items():
             print(k, v)
             amp.config.update_local_param(k, v)
         # self._setParams(exp)
@@ -707,9 +713,9 @@ class ObciLauncherWindow(QMainWindow, Ui_OBCILauncher):
 
     def _store_update_info(self, store_options):
         if store_options is not None:
-            self.store_file.setText(store_options[u'save_file_name'])
-            self.store_dir.setText(store_options[u'save_file_path'])
-            self.store_ts_checkBox.setChecked(int(store_options[u'append_timestamp']))
+            self.store_file.setText(store_options['save_file_name'])
+            self.store_dir.setText(store_options['save_file_path'])
+            self.store_ts_checkBox.setChecked(int(store_options['append_timestamp']))
             # self.store_local_checkBox.setChecked(store_options[u'store_locally'])
             self.store_checkBox.setChecked(True)
             self.store_container.show()
@@ -761,7 +767,7 @@ class ConnectToMachine(QDialog, Ui_ConnectToMachine):
     def set_nearby_machines(self, machines, current_hostname, current_ip):
         self.nearby_machines.clearContents()
         self.nearby_machines.setRowCount(len(machines))
-        for i, (ip, hostname) in enumerate(list(machines.iteritems())):
+        for i, (ip, hostname) in enumerate(machines.items()):
             ip_w = QTableWidgetItem(ip)
             ip_w.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self.nearby_machines.setItem(i, 0, ip_w)

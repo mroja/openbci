@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from multiplexer.multiplexer_constants import peers, types
-from multiplexer.clients import BaseMultiplexerServer
+from obci.mx_legacy.multiplexer_constants import peers, types
+from obci.mx_legacy.clients import BaseMultiplexerServer
 
 from obci.configs import settings, variables_pb2
 
@@ -18,6 +18,7 @@ def finish_saving(mx_addresses=settings.MULTIPLEXER_ADDRESSES, s_types=['eeg']):
     ctr.loop()
     return ctr.result
 
+
 def wait_saving_finished(mx_addresses=settings.MULTIPLEXER_ADDRESSES, s_types=['eeg']):
     ctr = AcquisitionControl(mx_addresses, s_types)
     ctr.loop()
@@ -25,10 +26,12 @@ def wait_saving_finished(mx_addresses=settings.MULTIPLEXER_ADDRESSES, s_types=['
 
 
 class AcquisitionControl(BaseMultiplexerServer):
+
     """A class for creating a manifest file with metadata."""
+
     def __init__(self, addresses, s_types=['eeg']):
         super(AcquisitionControl, self).__init__(addresses=addresses,
-                                          type=peers.ACQUISITION_CONTROL)
+                                                 type=peers.ACQUISITION_CONTROL)
         self._info_result = None
         self._data_result = None
         self._tags_result = None
@@ -43,13 +46,14 @@ class AcquisitionControl(BaseMultiplexerServer):
         self.result = None
 
     def send_finish_saving(self):
-        self.conn.send_message(message='finish',
-                      type=types.ACQUISITION_CONTROL_MESSAGE,
-                      flush=True)
+        self.conn.send_message(message=b'finish',
+                               type=types.ACQUISITION_CONTROL_MESSAGE,
+                               flush=True)
 
     def _all_ready(self):
-        eeg_ready = not (self._data_result is None  or self._info_result is None or self._tags_result is None)
-        wii_ready = not (self._wii_data_result is None  or self._wii_info_result is None or self._wii_tags_result is None)
+        eeg_ready = not (self._data_result is None or self._info_result is None or self._tags_result is None)
+        wii_ready = not (
+            self._wii_data_result is None or self._wii_info_result is None or self._wii_tags_result is None)
         if self._wii_type and self._eeg_type:
             return eeg_ready and wii_ready
         elif self._wii_type:
@@ -57,8 +61,7 @@ class AcquisitionControl(BaseMultiplexerServer):
         elif self._eeg_type:
             return eeg_ready
         else:
-            raise Exception ("no wii or eeg signal type detecetd")
-            
+            raise Exception("no wii or eeg signal type detecetd")
 
     def handle_message(self, mxmsg):
         v = variables_pb2.VariableVector()
@@ -91,23 +94,24 @@ class AcquisitionControl(BaseMultiplexerServer):
         self.no_response()
 
         if self._all_ready():
-            self.result = self._info_result, self._data_result, self._tags_result, self._wii_info_result, self._wii_data_result, self._wii_tags_result
+            self.result = (self._info_result, self._data_result, self._tags_result,
+                           self._wii_info_result, self._wii_data_result, self._wii_tags_result
+                           )
             LOGGER.info(''.join(["Stop acquisition_control with result: ", "\n"]))
             if self._eeg_type:
-                LOGGER.info(''.join([ "info result:\n",
-                                 debug_helper.get_str_variable_vector(self._info_result),
-                                 "data result:\n",
-                                 debug_helper.get_str_variable_vector(self._data_result),
-                                 "tags result:\n",
-                                 debug_helper.get_str_variable_vector(self._tags_result)
-                                 ]))
+                LOGGER.info(''.join(["info result:\n",
+                                     debug_helper.get_str_variable_vector(self._info_result),
+                                     "data result:\n",
+                                     debug_helper.get_str_variable_vector(self._data_result),
+                                     "tags result:\n",
+                                     debug_helper.get_str_variable_vector(self._tags_result)
+                                     ]))
             if self._wii_type:
-                LOGGER.info(''.join([ "\n wii info result:\n",
-                                 debug_helper.get_str_variable_vector(self._wii_info_result),
-                                 "wii data result:\n",
-                                 debug_helper.get_str_variable_vector(self._wii_data_result),
-                                 "wii tags result:\n",
-                                 debug_helper.get_str_variable_vector(self._wii_tags_result)
-                                 ]))
+                LOGGER.info(''.join(["\n wii info result:\n",
+                                     debug_helper.get_str_variable_vector(self._wii_info_result),
+                                     "wii data result:\n",
+                                     debug_helper.get_str_variable_vector(self._wii_data_result),
+                                     "wii tags result:\n",
+                                     debug_helper.get_str_variable_vector(self._wii_tags_result)
+                                     ]))
             self.working = False
-

@@ -1,20 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import argparse
-import os
-import sys
-import json
 import socket
 
 import zmq
 
-from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg, PollingObject
-from obci.control.launcher.launcher_messages import message_templates, error_codes
-from obci.control.launcher.obci_control_peer import OBCIControlPeer, basic_arg_parser
-from obci.control.peer import peer_config_parser
+from obci.control.common.message import OBCIMessageTool, send_msg, PollingObject
+from obci.control.launcher.launcher_messages import message_templates
 
-import obci.control.common.obci_control_settings as settings
 import obci.control.common.net_tools as net
 
 
@@ -44,24 +37,24 @@ class OBCIClient(object):
 
     def init_server_socket(self, srv_addrs):
         if self.server_req_socket is not None:
-            print "server socket restart"
+            print("server socket restart")
             self.server_req_socket.close()
 
         self.server_req_socket = self.ctx.socket(zmq.REQ)
 
         for addr in srv_addrs:
-            print addr
+            print(addr)
             self.server_req_socket.connect(addr)
 
     def launch(self, launch_file=None, sandbox_dir=None, name=None, overwrites=None):
         result = self.send_create_experiment(launch_file, sandbox_dir, name, overwrites)
-        print "create result:", result
+        print("create result:", result)
         if not result:
             self.init_server_socket(self.server_addresses)
             return result
         if result.type != "experiment_created":
             return result
-        print result
+        print(result)
         machine = result.origin_machine
         addrs = [addr for addr in result.rep_addrs if self._addr_connectable(addr, machine)]
 
@@ -133,9 +126,14 @@ class OBCIClient(object):
 
     def send_create_experiment(self, launch_file=None, sandbox_dir=None, name=None, overwrites=None):
 
-        send_msg(self.server_req_socket, self.mtool.fill_msg("create_experiment",
-                                                             launch_file=launch_file, sandbox_dir=sandbox_dir, name=name,
-                                                             overwrites=overwrites))
+        send_msg(
+            self.server_req_socket,
+            self.mtool.fill_msg(
+                "create_experiment",
+                launch_file=launch_file,
+                sandbox_dir=sandbox_dir,
+                name=name,
+                overwrites=overwrites))
 
         response, details = self.poll_recv(self.server_req_socket, 5000)
         return response
@@ -269,7 +267,7 @@ class OBCIClient(object):
             sock.close()
 
     def _connect(self, sock, addr_list):
-        print "****  ", addr_list
+        print("****  ", addr_list)
         this = self._is_this_machine(addr_list)
         connected = False
         for addr in addr_list:
@@ -278,8 +276,8 @@ class OBCIClient(object):
             try:
                 sock.connect(addr)
                 connected = True
-            except zmq.ZMQError, e:
-                print addr, " ::: ", str(e)
+            except zmq.ZMQError as e:
+                print(addr, " ::: ", str(e))
         if not connected:
             raise Exception("Could not connect to any of the addresses: " + str(addr_list))
 

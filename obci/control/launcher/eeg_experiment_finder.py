@@ -8,7 +8,7 @@ import socket
 
 import obci.control.common.net_tools as net
 from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg, PollingObject
-from obci.control.launcher.launcher_messages import message_templates, error_codes
+from obci.control.launcher.launcher_messages import message_templates
 
 import obci.control.launcher.launcher_logging as logger
 import obci.control.launcher.launcher_tools as launcher_tools
@@ -56,7 +56,7 @@ class EEGExperimentFinder(object):
             infos = self._info_amplified(exp)
 
             if infos is not None:
-                print "Found experiments...", str(infos)[:500]
+                print("Found experiments...", str(infos)[:500])
                 amplified += infos
 
         return amplified
@@ -154,8 +154,8 @@ class EEGExperimentFinder(object):
             return False
 
         params = peer_params['param_values']
-        if not 'channels_info' in params or\
-                not 'active_channels' in params:
+        if 'channels_info' not in params or\
+                'active_channels' not in params:
             LOGGER.info('Peer  ' + str(peer_id) + "  no channels_info param.")
             return False
         return True
@@ -233,7 +233,7 @@ def _gather_other_server_results(ctx, this_addr, ip_list):
             else:
                 LOGGER.warning('strange msg:  ' + str(msg))
         if srv_responses == len(ip_list):
-            print "GOT ALL eeg_experiment RESPONSES :-) [addr list:  ", ip_list, "]"
+            print("GOT ALL eeg_experiment RESPONSES :-) [addr list:  ", ip_list, "]")
             break
 
     other_exps_pull.close()
@@ -244,21 +244,20 @@ def find_eeg_experiments_and_push_results(ctx, srv_addrs, rq_message, nearby_ser
     LOGGER = logger.get_logger("eeg_experiment_finder", "info")
     finder = EEGExperimentFinder(srv_addrs, ctx, rq_message.client_push_address, nearby_servers)
     exps = finder.find_amplified_experiments()
-    mpoller = PollingObject()
 
     checked = rq_message.checked_srvs
     if not isinstance(checked, list):
         checked = []
 
     nrb = {}
-    for uid, srv in nearby_servers.snapshot().iteritems():
+    for uid, srv in nearby_servers.snapshot().items():
         if srv.ip not in checked:
             nrb[uid] = srv
 
     if not checked and nearby_servers.dict_snapshot():
         my_addr = nearby_servers.ip(hostname=socket.gethostname())
         LOGGER.info("checking other servers")
-        print [(srv.hostname, srv.ip) for srv in nrb.values()]
+        print([(srv.hostname, srv.ip) for srv in nrb.values()])
 
         ip_list = [srv.ip for srv in nrb.values() if
                    srv.ip != my_addr]
@@ -311,4 +310,4 @@ if __name__ == '__main__':
     finder = EEGExperimentFinder(['tcp://127.0.0.1:54654'], zmq.Context(), 'tcp://127.0.0.1:12345', [])
     exps = finder.find_amplified_experiments()
     desc = json.dumps(exps, indent=4)
-    print desc
+    print(desc)

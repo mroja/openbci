@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from PyQt4 import QtCore, QtGui
 
-import obci_log_model
+from . import obci_log_model
 
-from obci_launcher_constants import STATUS_COLORS
+from .obci_launcher_constants import STATUS_COLORS
 
 
 class LogEngine(QtCore.QObject):
@@ -75,10 +75,10 @@ class LogEngine(QtCore.QObject):
             self._show_tab(len(self._model.get_peers()))
 
     def experiment_stopped(self):
-        print 'experiment stopped'
+        print('experiment stopped')
 
     def experiment_started(self):
-        print 'experiment started'
+        print('experiment started')
         # self._model.start_running(self._exp)
 
     def on_experiment_start(self, exp):

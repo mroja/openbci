@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
@@ -24,13 +24,14 @@
 
 """Implement Smart tags classes: SmartTagEndTag, SmartTagDuration."""
 
-import numpy
 from .. import read_manager
 from ..signal import read_info_source
 from ..signal import read_data_source
-import read_tags_source
+from . import read_tags_source
+
 
 class SmartTag(read_manager.ReadManager):
+
     def __init__(self, p_tag_def, p_start_tag):
 
         super(SmartTag, self).__init__(read_info_source.MemoryInfoSource(),
@@ -39,7 +40,7 @@ class SmartTag(read_manager.ReadManager):
         self._start_tag = p_start_tag
         self._tag_def = p_tag_def
         self._is_initialised = False
-        
+
     def get_start_timestamp(self):
         return self._tag_def.start_param_func(self._start_tag) + \
             self._tag_def.start_offset
@@ -47,7 +48,7 @@ class SmartTag(read_manager.ReadManager):
     def get_end_timestamp(self):
         """To be subclassed."""
         pass
-    
+
     def get_start_tag(self):
         return self._start_tag
 
@@ -56,7 +57,7 @@ class SmartTag(read_manager.ReadManager):
 
     def is_initialised(self):
         return self._is_initialised
-    
+
     def __getitem__(self, p_key):
         if p_key == 'start_timestamp':
             return self.get_start_timestamp()
@@ -64,8 +65,10 @@ class SmartTag(read_manager.ReadManager):
             return self.get_end_timestamp()
         else:
             return self.get_start_tag()[p_key]
-    
+
+
 class SmartTagEndTag(SmartTag):
+
     """Public interface:
     - get_data() <- this is the only method to be really used outside
     -
@@ -78,6 +81,7 @@ class SmartTagEndTag(SmartTag):
     - set_data()
     - set_end_tag()
     """
+
     def __init__(self, p_tag_def, p_start_tag):
         """
         - p_tag_def - must be an instance of SmartTagEndTagDefinition.
@@ -88,7 +92,7 @@ class SmartTagEndTag(SmartTag):
         self._end_tag = None
 
     def set_end_tag(self, p_tag):
-        """This method must be fired only and only once, to set 
+        """This method must be fired only and only once, to set
         smart tag`s ending tag."""
         self._end_tag = p_tag
 
@@ -99,10 +103,12 @@ class SmartTagEndTag(SmartTag):
     def get_end_tag(self):
         return self._end_tag
 
+
 class SmartTagDuration(SmartTag):
+
     """Public interface:
     - get_data() <- this is the only method to be really used outside
-    - 
+    -
     - __init__(tag_def, start_tag)
     - get_start_timestamp()
     - get_end_timestamp()
@@ -111,9 +117,7 @@ class SmartTagDuration(SmartTag):
     - set_data()
     - set_end_tag()
     """
+
     def get_end_timestamp(self):
         return self._tag_def.start_param_func(self._start_tag) + \
             self._tag_def.duration + self._tag_def.end_offset
-
-
- 

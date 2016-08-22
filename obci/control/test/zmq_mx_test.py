@@ -1,16 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# from multiplexer.multiplexer_constants import peers, types
-from obci.configs import settings, variables_pb2
+import zmq
 
-# from multiplexer.clients import BaseMultiplexerServer
 from obci.control.common.message import send_msg, recv_msg
 
-import zmq
-import time
-
 SEND = 1000000
+
 
 class Tester(object):
 
@@ -29,7 +25,7 @@ class Tester(object):
     def test(self):
         # for i in range(SEND):
         #     send_msg(self.push, str(i))
-        print "zmq client --- start receiving"
+        print("zmq client --- start receiving")
         received = 0
         prev = -1
         for i in range(SEND):
@@ -38,17 +34,16 @@ class Tester(object):
                 # prev = int(msg)
                 received += 1
             if received % 10000 == 0:
-                print "zmq: received ", received, "messages, last: ", msg
+                print("zmq: received ", received, "messages, last: ", msg)
 
         if received == SEND:
-            print "zmq: OK"
+            print("zmq: OK")
         else:
-            print "OHHHH NOOOOOOOOO :( :( :( :( :(", received
+            print("OHHHH NOOOOOOOOO :( :( :( :( :(", received)
         # self.push.close()
         self.pull.close()
 
-
-        print "zmq: finished."
+        print("zmq: finished.")
 
 if __name__ == '__main__':
     t = Tester()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Author:
@@ -20,11 +20,14 @@ x
 21
 
 """
+
+
 def run():
-    import doctest, sys
+    import doctest
+    import sys
     doctest.testmod(sys.modules[__name__])
     print("All tests succeeded!")
-        
-        
-if __name__=='__main__':
+
+
+if __name__ == '__main__':
     run()

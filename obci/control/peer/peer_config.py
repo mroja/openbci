@@ -3,10 +3,14 @@
 
 import warnings
 
-from obci.control.common.config_helpers import *
+from obci.control.common.config_helpers import (param_name_type_check,
+                                                module_id_type_check,
+                                                argument_not_empty_check,
+                                                reference_split)
 
 
 class PeerConfig(object):
+
     """
     This class represents core configuration of an OpenBCI peer. It is
     meant to be used both as an output of a config parser and as
@@ -34,9 +38,10 @@ class PeerConfig(object):
     Launch dependencies are used when we want to delay peer start
     until all dependncies report that they are ready to work.
     """
+
     def __init__(self, peer_id=None, warn_overwrite=False):
         # system ID of the peer
-        #TODO - is this necessary in config core?
+        # TODO - is this necessary in config core?
         self.peer_id = peer_id
 
         # keys are source names, values are real peer IDs
@@ -66,20 +71,19 @@ class PeerConfig(object):
 
         self._warn_overwrite = warn_overwrite
 
-
     def __repr__(self):
         st = "PEER CONFIG [{0}]".format(self.peer_id)
         st = ''.join([st, "\nPeer ID: {0}".format(self.peer_id)])
         st = ''.join([st, "\nConfig_sources: {0}".format(
-                                                        self._config_sources)])
+            self._config_sources)])
         st = ''.join([st, "\nLaunch dependencies: {0}".format(
-                                                        self._launch_deps)])
+            self._launch_deps)])
         st = ''.join([st, "\nExternal param definitions: {0}".format(
-                                                        self._ext_param_defs)])
+            self._ext_param_defs)])
         st = ''.join([st, "\nParameter values: {0}".format(
-                                                        self._param_values)])
+            self._param_values)])
         st = ''.join([st, "\nAcquired external params: {0}".format(
-                                                        self._set_ext_params)])
+            self._set_ext_params)])
         return st
 
     @property
@@ -130,7 +134,6 @@ class PeerConfig(object):
         """
         return self._ext_param_defs
 
-
     @property
     def ready_ext_params(self):
         """
@@ -155,7 +158,6 @@ class PeerConfig(object):
         elif sym_name in self._launch_deps:
             self.set_launch_dependency(sym_name, peer_id)
 
-
     def set_config_source(self, source_name, peer_id='', _set_dep=True):
         """
         Store a configuration symbolic source name and its real peer_id.
@@ -171,11 +173,11 @@ class PeerConfig(object):
             old_id = srcs[source_name]
             self._overwrite_warn("""Config source overwrite! \
 Name: {0}, old id: {1}, new id: {2}""".format(
-                            source_name, old_id, peer_id))
+                source_name, old_id, peer_id))
             self._src_ids[old_id].remove(source_name)
 
         self._config_sources[source_name] = peer_id
-        if not peer_id in self._src_ids:
+        if peer_id not in self._src_ids:
             self._src_ids[peer_id] = []
         self._src_ids[peer_id].append(source_name)
         if source_name in self._launch_deps and _set_dep:
@@ -193,16 +195,15 @@ Name: {0}, old id: {1}, new id: {2}""".format(
             old_id = deps[dep_name]
             self._overwrite_warn("""Dependency overwrite! \
 Name: {0}, old id: {1}, new id: {2}""".format(
-                            dep_name, old_id, peer_id))
+                dep_name, old_id, peer_id))
             self._dep_ids[old_id].remove(dep_name)
 
         self._launch_deps[dep_name] = peer_id
-        if not peer_id in self._dep_ids:
+        if peer_id not in self._dep_ids:
             self._dep_ids[peer_id] = []
         self._dep_ids[peer_id].append(dep_name)
         if dep_name in self._config_sources and _set_src:
             self.set_config_source(dep_name, peer_id, _set_dep=False)
-
 
     def get_param(self, param_name):
         """
@@ -222,7 +223,7 @@ Name: {0}, old id: {1}, new id: {2}""".format(
         Warns about overwriting definitions, especially when a
         previously local parameter becomes external.
         """
-        #TODO - API change, split reference to 2 method params.
+        # TODO - API change, split reference to 2 method params.
         param_name_type_check(param_name)
         argument_not_empty_check(param_name)
 
@@ -235,11 +236,11 @@ not declared in configuration!".format(source_name, reference))
         defs = self._ext_param_defs
         if param_name in defs:
             self._overwrite_warn(msg_overwrite_ext_def.format(
-                            param_name, defs[param_name], df))
+                param_name, defs[param_name], df))
 
         elif param_name in self._param_values:
             self._overwrite_warn(msg_overwrite_local_to_ext.format(
-                            param_name, source_name, source_param))
+                param_name, source_name, source_param))
 
         self._ext_param_defs[param_name] = (source_name, source_param)
         self._param_values[param_name] = None
@@ -254,7 +255,6 @@ not declared in configuration!".format(source_name, reference))
 
         self.add_external_param_def(param_name, reference)
 
-
     def _set_external_param(self, param_name, value):
 
         # Store a value for external parameter
@@ -265,7 +265,6 @@ not declared in configuration!".format(source_name, reference))
         else:
             self._param_values[param_name] = value
             self._set_ext_params.append(param_name)
-
 
     def set_param_from_source(self, src_id, src_param, value):
         """
@@ -281,8 +280,6 @@ not declared in configuration!".format(source_name, reference))
             if src_param in src_params:
                 self._set_external_param(src_params[src_param], value)
 
-
-
     def add_local_param(self, param_name, value):
         """
         Store a value of a local parameter.
@@ -294,16 +291,15 @@ not declared in configuration!".format(source_name, reference))
 
         if param_name in self._ext_param_defs:
             self._overwrite_warn(msg_overwrite_ext_to_local.format(
-                                                        param_name, value))
+                param_name, value))
             del self._ext_param_defs[param_name]
             if param_name in self._set_ext_params:
                 del self._set_ext_params[param_name]
         elif param_name in self._param_values:
             self._overwrite_warn(msg_overwrite_local.format(
-                            param_name, self._param_values[param_name], value))
+                param_name, self._param_values[param_name], value))
 
         self._param_values[param_name] = value
-
 
     def update_local_param(self, param_name, value):
         """
@@ -317,9 +313,7 @@ not declared in configuration!".format(source_name, reference))
     def set_param(self, param_name, value):
         return self.update_local_param(param_name, value)
 
-
-################### Helper methods ############################################
-
+# Helper methods
 
     def config_ready(self):
         """
@@ -341,8 +335,8 @@ not declared in configuration!".format(source_name, reference))
         unused = self.unused_config_sources()
         if details is not None:
             details["config_sources"] = []
-        for src, peer_id in self._config_sources.iteritems():
-            if not peer_id and not src in unused:
+        for src, peer_id in self._config_sources.items():
+            if not peer_id and src not in unused:
                 if details is not None:
                     details["config_sources"].append((src, peer_id))
                 result = False
@@ -355,7 +349,7 @@ not declared in configuration!".format(source_name, reference))
         result = True
         if details is not None:
             details["launch_deps"] = []
-        for dep, peer_id in self._launch_deps.iteritems():
+        for dep, peer_id in self._launch_deps.items():
             if not peer_id:
                 if details is not None:
                     details["launch_deps"].append((dep, peer_id))
@@ -382,7 +376,7 @@ not declared in configuration!".format(source_name, reference))
         Return a list of parameters coming from this source (symbolic name).
         """
         params = {}
-        for loc_name, (src, src_par) in self._ext_param_defs.iteritems():
+        for loc_name, (src, src_par) in self._ext_param_defs.items():
             if src == p_src:
                 params[src_par] = loc_name
         return params
@@ -393,11 +387,10 @@ not declared in configuration!".format(source_name, reference))
         which are not yet set.
         """
         params = {}
-        for loc_name, (src, src_par) in self._ext_param_defs.iteritems():
+        for loc_name, (src, src_par) in self._ext_param_defs.items():
             if src == p_src and loc_name not in self._set_ext_params:
                 params[src_par] = loc_name
         return params
-
 
     def used_config_sources(self):
         """
@@ -432,37 +425,33 @@ not declared in configuration!".format(source_name, reference))
         deps = self._launch_deps
         return [dep for dep in deps.keys() if deps[dep] == '']
 
-
     def _update_check(self, param_name):
         if param_name not in self._param_values:
             raise ValueError("Parameter {0} does not exist in configuration of {1},\
                                  cannot update!".format(param_name, self.peer_id))
-
 
     def _overwrite_warn(self, p_message):
         if self._warn_overwrite:
             warnings.warn(ConfigOverwriteWarning(p_message), stacklevel=2)
 
 
-
-
-msg_overwrite_ext_to_local = u"Changing external parameter '{0}' to Local! \
+msg_overwrite_ext_to_local = "Changing external parameter '{0}' to Local! \
 New value: {1}."
 
-msg_overwrite_local_to_ext = u"Changing local parameter {0} to external! \
+msg_overwrite_local_to_ext = "Changing local parameter {0} to external! \
 Source: {1}, src_param: {2}."
 
-msg_overwrite_local = u"Overwriting local param '{0}'! Old value: {1}, \
+msg_overwrite_local = "Overwriting local param '{0}'! Old value: {1}, \
 new value: {2}"
 
-msg_overwrite_ext_def = u"External parameter definition overwrite! \
+msg_overwrite_ext_def = "External parameter definition overwrite! \
 Name: {0}, old ref: {1}, new ref: {2}."
 
 
-########################## Warnings, exceptions ###############################
-
+# warnings, exceptions
 
 class ConfigWarning(Warning):
+
     def __init__(self, value=None):
         self.value = value
 
@@ -472,8 +461,6 @@ class ConfigWarning(Warning):
         else:
             return repr(self)
 
-class ConfigOverwriteWarning(ConfigWarning):
-    pass
 
-if __name__ == '__main__':
+class ConfigOverwriteWarning(ConfigWarning):
     pass

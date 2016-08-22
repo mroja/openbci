@@ -1,2 +1,0 @@
-#!/bin/bash
-pyuic4 ui/UGMMain.ui -o ../UGMMain.py

@@ -3,14 +3,11 @@
 
 import zmq
 
-from obci.control.common.message import OBCIMessageTool, PollingObject, send_msg, recv_msg
+from obci.control.common.message import OBCIMessageTool, PollingObject, send_msg
 from obci.control.launcher.launcher_messages import message_templates
 
-from process_io_handler import DEFAULT_TAIL_RQ
-
-import process
-from process import FAILED, FINISHED, TERMINATED, UNKNOWN, NON_RESPONSIVE,\
-    PING, RETURNCODE, REG_TIMER
+from . import process
+from .process import FAILED, TERMINATED, PING, RETURNCODE, REG_TIMER
 
 
 class RemoteProcess(process.Process):
@@ -60,7 +57,7 @@ class RemoteProcess(process.Process):
             rq_sock.close()
         if res:
             res = mtool.unpack_msg(res)
-            print "Response to kill request: ", res
+            print("Response to kill request: ", res)
 
             with self._status_lock:
                 self._status = TERMINATED

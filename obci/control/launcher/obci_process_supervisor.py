@@ -1,12 +1,6 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function, absolute_import
+#!/usr/bin/python3
 
 import os
-import sys
-import uuid
-import subprocess
 import argparse
 import threading
 import time
@@ -14,8 +8,7 @@ import time
 import zmq
 import socket
 
-from obci.control.common.message import OBCIMessageTool, send_msg, recv_msg
-from obci.control.launcher.launcher_messages import message_templates
+from obci.control.common.message import send_msg
 import obci.control.common.net_tools as net
 import obci.control.common.obci_control_settings as settings
 from obci.control.peer.config_defaults import CONFIG_DEFAULTS
@@ -24,11 +17,9 @@ from obci.control.launcher.obci_control_peer import OBCIControlPeer, basic_arg_p
 
 import obci.control.launcher.launcher_tools as launcher_tools
 
-from obci.utils.openbci_logging import get_logger, log_crash
+from obci.utils.openbci_logging import log_crash
 
-from obci.control.launcher.subprocess_monitor import (
-    SubprocessMonitor, TimeoutDescription,
-    STDIN, STDOUT, STDERR, NO_STDIO, RETURNCODE)
+from obci.control.launcher.subprocess_monitor import SubprocessMonitor, NO_STDIO, RETURNCODE
 
 from obci.control.launcher.process_io_handler import DEFAULT_TAIL_RQ
 
@@ -73,9 +64,9 @@ class OBCIProcessSupervisor(OBCIControlPeer):
 
         super(OBCIProcessSupervisor, self).__init__(
             source_addresses=source_addresses,
-                                            rep_addresses=rep_addresses,
-                                            pub_addresses=pub_addresses,
-                                            name=name)
+            rep_addresses=rep_addresses,
+            pub_addresses=pub_addresses,
+            name=name)
         self.subprocess_mgr = SubprocessMonitor(self.ctx, self.uuid, logger=self.logger)
 
     def peer_type(self):
@@ -83,7 +74,7 @@ class OBCIProcessSupervisor(OBCIControlPeer):
 
     def net_init(self):
         self.source_sub_socket = self.ctx.socket(zmq.SUB)
-        self.source_sub_socket.setsockopt(zmq.SUBSCRIBE, "")
+        self.source_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
         self._all_sockets.append(self.source_sub_socket)
 
@@ -148,7 +139,6 @@ class OBCIProcessSupervisor(OBCIControlPeer):
         return addr + ':' + str(port)
 
     def peer_env(self, mx_data):
-
         if mx_data[0] is None:
             return None
 
@@ -158,26 +148,23 @@ class OBCIProcessSupervisor(OBCIControlPeer):
             addr = socket.gethostname()
 
         _env = {
-            "MULTIPLEXER_ADDRESSES": str(addr) + ':' + str(port),
-            "MULTIPLEXER_PASSWORD": '',  # mx_data[1],
-            "MULTIPLEXER_RULES": str(launcher_tools.mx_rules_path())
+            "MULTIPLEXER_ADDRESSES": str(addr) + ':' + str(port)
         }
-
         env.update(_env)
         return env
 
-    @msg_handlers.handler("start_mx")
-    def handle_start_mx(self, message, sock):
+    @msg_handlers.handler("start_broker")
+    def handle_start_broker(self, message, sock):
         if 'mx' in self.launch_data and self.mx_data[0] is not None:
             self.logger.info("..starting multiplexer")
             self.peer_order.remove(['mx'])
             self.peers_to_launch.remove('mx')
-            path = launcher_tools.mx_path()
+            path = launcher_tools.broker_path()
 
-            args = ['run_multiplexer', self.mx_addr_str(
-                (('0.0.0.0', self.mx_data[0][1]), self.mx_data[1])),
-                '--multiplexer-password', self.mx_data[1],
-                    '--rules', launcher_tools.mx_rules_path()]
+            args = [
+                'run_multiplexer',
+                self.mx_addr_str((('0.0.0.0', self.mx_data[0][1]), self.mx_data[1]))
+            ]
             proc, details = self._launch_process(path, args, 'multiplexer', 'mx',
                                                  env=self.env)
             self.processes['mx'] = proc
@@ -243,7 +230,7 @@ class OBCIProcessSupervisor(OBCIControlPeer):
             del self.processes[peer]
             del self.launch_data[peer]
 
-        for peer, data in message.start_peers_data.iteritems():
+        for peer, data in message.start_peers_data.items():
             self.launch_data[peer] = data
         self.restarting = [peer for peer in message.start_peers_data if peer in message.kill_peers]
 
@@ -252,7 +239,6 @@ class OBCIProcessSupervisor(OBCIControlPeer):
     def _launch_processes(self, launch_data, restore_config=[]):
         proc, details, info_obj = None, None, None
         success = True
-        path, args = None, None
 
         self.status = launcher_tools.LAUNCHING
 
@@ -260,7 +246,7 @@ class OBCIProcessSupervisor(OBCIControlPeer):
 
         if 'amplifier' in launch_data:
             ldata.append(('amplifier', launch_data['amplifier']))
-        for peer, data in launch_data.iteritems():
+        for peer, data in launch_data.items():
             if (peer, data) not in ldata and peer != 'config_server':
                 ldata.append((peer, data))
 
@@ -520,4 +506,3 @@ def run_obci_process_supervisor():
                                        experiment_uuid=args.experiment_uuid,
                                        name=args.name)
     process_sv.run()
-

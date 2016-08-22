@@ -1,24 +1,22 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt4 import QtCore
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
 import zmq
 import threading
-import ConfigParser
+import configparser
 import codecs
 import os
 import socket
 import uuid
-import io
 import json
 import time
 
-import obci.control.common.net_tools as net
-from obci.control.common.message import send_msg, recv_msg, OBCIMessageTool, PollingObject
+from PyQt4 import QtCore
+from PyQt4.QtGui import QProgressDialog
+from PyQt4.QtCore import Qt
 
-from obci.control.launcher.launcher_messages import message_templates
+import obci.control.common.net_tools as net
+from obci.control.common.message import send_msg, recv_msg
 
 import obci.control.launcher.obci_script_utils as obci_script_utils
 
@@ -30,7 +28,7 @@ from obci.control.peer.peer_config import PeerConfig
 
 from obci.utils.openbci_logging import get_logger, log_crash
 
-from experiment_engine_info import ExperimentEngineInfo, MODE_ADVANCED, MODE_BASIC,\
+from .experiment_engine_info import ExperimentEngineInfo, MODE_ADVANCED, \
     DEFAULT_CATEGORY, USER_CATEGORY
 
 import obci.control.common.obci_control_settings as settings
@@ -64,7 +62,8 @@ class OBCILauncherEngine(QtCore.QObject):
 
         self._cached_nearby_machines = {}
         if presets:
-            self.preset_path = os.path.join(launcher_tools.obci_root(), ''.join(['control/gui/presets/', presets, '.ini']))
+            self.preset_path = os.path.join(
+                launcher_tools.obci_root(), ''.join(['control/gui/presets/', presets, '.ini']))
         else:
             self.preset_path = os.path.join(launcher_tools.obci_root(), PRESETS)
         self.user_preset_path = USER_PRESETS
@@ -107,12 +106,12 @@ class OBCILauncherEngine(QtCore.QObject):
         return exp
 
     def _saver_msg(self, killer_proc):
-        print "_SAVER_MSG"
+        print("_SAVER_MSG")
         self.saver_msg.emit(killer_proc)
 
     @log_crash
     def cleanup(self):
-        print "CLEANUP!!!!"
+        print("CLEANUP!!!!")
         self._stop_monitoring = True
 
         self.monitor_push.close()  # linger=0)
@@ -149,7 +148,7 @@ class OBCILauncherEngine(QtCore.QObject):
 
         running = self._list_experiments()
         for exp in running:
-            print "running exp::::::  ", exp
+            print("running exp::::::  ", exp)
             matches = [(i, e) for i, e in enumerate(experiments) if
                        e.launch_file == exp['launch_file_path'] and e.preset_data is not None
                        and e.status.status_name == launcher_tools.READY_TO_LAUNCH]
@@ -174,16 +173,16 @@ class OBCILauncherEngine(QtCore.QObject):
 
     def _parse_presets(self, preset_path, cat_name=None):
         preset_file = codecs.open(preset_path, encoding='utf-8')
-        parser = ConfigParser.RawConfigParser()
+        parser = configparser.RawConfigParser()
         parser.readfp(preset_file)
         presets = []
         for sec in parser.sections():
             pres = {'name': sec}
             for opt in parser.options(sec):
                 pres[opt] = parser.get(sec, opt)
-            if not 'category' in pres:
+            if 'category' not in pres:
                 pres['category'] = cat_name if cat_name is not None else DEFAULT_CATEGORY
-            if not 'public_params' in pres:
+            if 'public_params' not in pres:
                 pres['public_params'] = ''
             presets.append(pres)
         return presets
@@ -194,7 +193,7 @@ class OBCILauncherEngine(QtCore.QObject):
         pull.connect(pull_addr)
 
         subscriber = ctx.socket(zmq.SUB)
-        subscriber.setsockopt(zmq.SUBSCRIBE, "")
+        subscriber.setsockopt_string(zmq.SUBSCRIBE, "")
 
         poller = zmq.Poller()
         poller.register(pull, zmq.POLLIN)
@@ -211,7 +210,7 @@ class OBCILauncherEngine(QtCore.QObject):
         def handle_msg(msg):
             if msg.type == '_launcher_engine_msg':
                 if msg.task == 'connect':
-                    print "msg.pub.addr  ", msg.pub_addr, msg
+                    print("msg.pub.addr  ", msg.pub_addr, msg)
                     subscriber.connect(msg.pub_addr)
             else:
                 self.obci_state_change.emit(msg)
@@ -272,7 +271,7 @@ class OBCILauncherEngine(QtCore.QObject):
 
         if handled:
             self.update_ui.emit(launcher_message)
-            print "----engine signalled", type_
+            print("----engine signalled", type_)
 
     @log_crash
     def _handle_experiment_created(self, msg, exp_list=None):
@@ -285,7 +284,7 @@ class OBCILauncherEngine(QtCore.QObject):
         if matches:
             index, exp = matches.pop()
             exp.setup_from_launcher(msg.dict(), preset=True)
-            print "^^^^^^^^  created exp, UUID:", exp.exp_config.uuid
+            print("^^^^^^^^  created exp, UUID:", exp.exp_config.uuid)
         else:
             exps.append(self.make_exp_obj(launcher_data=msg.dict(), ctx=self.ctx))
 
@@ -303,18 +302,18 @@ class OBCILauncherEngine(QtCore.QObject):
         exps = self.experiments
         old_index, old_exp = None, None
         new_index, new_exp = None, None
-        print msg, len(exps)
+        print(msg, len(exps))
 
         old_matches = []
         for i, e in enumerate(exps):
-            print e.launch_file
+            print(e.launch_file)
             if msg.old_launch_file == e.launch_file:
                 old_matches.append((i, e))
         # old_matches = [(i, e) for i, e in enumerate(exps) if\
         # (msg.old_launch_file in e.launch_file) ]#and\
         # e.preset_data is not None]
 
-        print "old_matches", old_matches
+        print("old_matches", old_matches)
 
         if old_matches:
             old_index, old_exp = old_matches.pop()
@@ -322,13 +321,13 @@ class OBCILauncherEngine(QtCore.QObject):
         new_matches = [(i, e) for i, e in enumerate(exps) if
                        (e.name == msg.name or e.launch_file == msg.launch_file) and
                        e.preset_data is not None and e.status.status_name != launcher_tools.RUNNING]
-        print "new matches", new_matches
+        print("new matches", new_matches)
 
         if new_matches:
             new_index, new_exp = new_matches.pop()
 
         if old_index is not None:
-            print "old match", old_index, old_exp.preset_data
+            print("old match", old_index, old_exp.preset_data)
             exp = self.make_exp_obj(preset_data=old_exp.preset_data, ctx=self.ctx)
             self.experiments[old_index] = exp
 
@@ -366,7 +365,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
         uid = msg.experiment_id
         index = self.index_of(uid)
         if index is not None:
-            print "msg", msg, "uid", uid, "index", index
+            print("msg", msg, "uid", uid, "index", index)
             exp = self.experiments[index]
 
             if exp.preset_data:
@@ -386,7 +385,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
             exp = self.experiments[index]
 
             if msg.msg_code in ["obci_peer_registered", "obci_peer_params_changed"]:
-                for par, val in msg.launcher_message['params'].iteritems():
+                for par, val in msg.launcher_message['params'].items():
                     exp.update_peer_param(msg.launcher_message['peer_id'],
                                           par,
                                           val,
@@ -399,9 +398,9 @@ experiments is possible only when launcher is running (command: obci srv)')))
         if index is not None:
             exp = self.experiments[index]
             exp.status.set_status(msg.status_name, msg.details)
-            print msg.status_name
+            print(msg.status_name)
             if msg.peers:
-                for peer, status in msg.peers.iteritems():
+                for peer, status in msg.peers.items():
                     exp.status.peer_status(peer).set_status(status)
 
     @log_crash
@@ -456,7 +455,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
             exp.exp_config.extend_with_peer(peer_id, msg.peer_path, conf)
             exp.status.peers_status[peer_id] = launcher_tools.PeerStatus(peer_id,
                                                                          status_name=msg.status_name)
-        print msg
+        print(msg)
 
     def list_experiments(self):
         return self.experiments
@@ -467,7 +466,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
         exps = []
         self._process_response(exp_list)
         if exp_list is not None:
-            for exp_data in exp_list.exp_data.values():
+            for exp_data in list(exp_list.exp_data.values()):
                 exps.append(exp_data)
         return exps
 
@@ -477,7 +476,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
         self.client.srv_kill()
         running = obci_script_utils.server_process_running()
         if running:
-            print "reset_launcher: something went wrong... SERVER STILL RUNNING"
+            print("reset_launcher: something went wrong... SERVER STILL RUNNING")
 
         self.client = obci_script_utils.client_server_prep()
         self.experiments = self.prepare_experiments()
@@ -490,26 +489,26 @@ experiments is possible only when launcher is running (command: obci srv)')))
         progress.setCancelButton(None)
         progress.show()
 
-        print "STOP EXPERIMENT!!!!"
+        print("STOP EXPERIMENT!!!!")
         uid = str(msg)
         index = self.index_of(uid)
         if index is None:
-            print "experiment uuid not found: ", uid
+            print("experiment uuid not found: ", uid)
             return
         exp = self.experiments[index]
         if not exp.launcher_data:
-            print "this exp is not running...", uid
+            print("this exp is not running...", uid)
             return
         if stop_storing:
             # stop storing ONLY if the experiment was fired from this very obci gui
             # otherwise the data is lost ....
             # below code was to stop storing every time signal saver is in scenarios`es modules
             # but it sometimes hangs forever eg. when we are using morph extensively ...
-            #`
+            # `
             # or ("signal_saver" in exp.exp_config.peers and\
             #    exp.status.peer_status("signal_saver").status_name \
             #                in [launcher_tools.RUNNING, launcher_tools.LAUNCHING]):
-            print "STOP STORING"
+            print("STOP STORING")
             exp.stop_storing(self.client)
             for i in range(4):
                 time.sleep(0.6)  # FIXME - without it some problem with below kill...
@@ -519,15 +518,15 @@ experiments is possible only when launcher is running (command: obci srv)')))
 
     @log_crash
     def start_experiment(self, msg, store_options=None):
-        print "START EXPERIMENT!!!!"
+        print("START EXPERIMENT!!!!")
         uid = str(msg)
         index = self.index_of(uid)
         if index is None:
-            print "experiment uuid not found: ", uid
+            print("experiment uuid not found: ", uid)
             return
         exp = self.experiments[index]
         if exp.launcher_data:
-            print "already running"
+            print("already running")
             return
 
         if store_options:
@@ -540,7 +539,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
 
         if not ok:
             return result
-        print result
+        print(result)
 
         machine = result.origin_machine
         addrs = [addr for addr in result.rep_addrs if self._addr_connectable(addr, machine)]
@@ -646,7 +645,7 @@ experiments is possible only when launcher is running (command: obci srv)')))
 
     @log_crash
     def _save_presets(self, preset_list, preset_path):
-        parser = ConfigParser.RawConfigParser()
+        parser = configparser.RawConfigParser()
         for pre in preset_list:
             parser.add_section(pre["name"])
             for key in ["info", "launch_file", "public_params", "category"]:

@@ -18,7 +18,6 @@ import obci.control.common.net_tools as net
 import obci.control.common.obci_control_settings as settings
 
 from obci.control.launcher.subprocess_monitor import SubprocessMonitor
-from obci.control.launcher.process import FAILED, TERMINATED, FINISHED, RUNNING, NON_RESPONSIVE
 from obci.utils.openbci_logging import get_logger, log_crash
 from obci.control.common import net_tools
 
@@ -154,7 +153,7 @@ class OBCIControlPeer(object):
         push_sock = self.ctx.socket(zmq.PUSH)
         push_sock.connect(push_addr)
 
-        send_msg(push_sock, u'1')
+        send_msg(push_sock, b'1')
         po = PollingObject()
 
         while not self._stop_publishing:
@@ -176,12 +175,12 @@ class OBCIControlPeer(object):
         push_sock = self.ctx.socket(zmq.PUSH)
         push_sock.connect(push_addr)
 
-        send_msg(push_sock, u'1')
+        send_msg(push_sock, b'1')
         while not self._stop_monitoring:
             dead = self.subprocess_mgr.not_running_processes()
             if dead:
                 # self.logger.warning("DEAD  process" +  str(dead))
-                for key, status in dead.iteritems():
+                for key, status in dead.items():
                     send_msg(push_sock, self.mtool.fill_msg('dead_process', machine=key[0],
                                                             pid=key[1], status=status))
             time.sleep(0.5)
@@ -234,10 +233,10 @@ class OBCIControlPeer(object):
         self.rep_socket.setsockopt(zmq.LINGER, 0)
         self._all_sockets.append(self.rep_socket)
 
-        print "\n\tname: {0}\n\tpeer_type: {1}\n\tuuid: {2}\n".format(
-            self.name, self.peer_type(), self.uuid)
-        print "rep: {0}".format(self.rep_addresses)
-        print "pub: {0}\n".format(self.pub_addresses)
+        print("\n\tname: {0}\n\tpeer_type: {1}\n\tuuid: {2}\n".format(
+            self.name, self.peer_type(), self.uuid))
+        print("rep: {0}".format(self.rep_addresses))
+        print("pub: {0}\n".format(self.pub_addresses))
 
         self.source_req_socket = self.ctx.socket(zmq.REQ)
 
@@ -264,7 +263,7 @@ class OBCIControlPeer(object):
                     addresses[i] = addr + ':' + str(port)
                 else:
                     sock.bind(addr)
-        except Exception, e:
+        except Exception as e:
             self.logger.critical("CRITICAL error: %s", str(e))
             raise(e)
 
@@ -336,7 +335,7 @@ class OBCIControlPeer(object):
                 socks = []
                 try:
                     socks = dict(poller.poll())
-                except zmq.ZMQError, e:
+                except zmq.ZMQError as e:
                     self.logger.warning(": zmq.poll(): " + str(e.strerror))
                 for sock in socks:
                     if socks[sock] == zmq.POLLIN:
@@ -344,7 +343,7 @@ class OBCIControlPeer(object):
                         while more:
                             try:
                                 msg = recv_msg(sock, flags=zmq.NOBLOCK)
-                            except zmq.ZMQError, e:
+                            except zmq.ZMQError as e:
                                 if e.errno == zmq.EAGAIN or sock.getsockopt(zmq.TYPE) == zmq.REP:
                                     more = False
                                 else:
@@ -363,7 +362,7 @@ class OBCIControlPeer(object):
                 if self.interrupted:
                     break
                 self._update_poller(poller, poll_sockets)
-        except Exception, e:
+        except Exception as e:
             # from urllib2 import HTTPError
             # try:
             #     self.logger.critical("UNHANDLED EXCEPTION IN %s!!! ABORTING!  Exception data: %s, e.args: %s, %s",
@@ -390,10 +389,10 @@ class OBCIControlPeer(object):
         new_sockets = list(self._poll_sockets)
 
         for sock in new_sockets:
-            if not sock in curr_sockets:
+            if sock not in curr_sockets:
                 poller.register(sock, zmq.POLLIN)
         for sock in curr_sockets:
-            if not sock in new_sockets:
+            if sock not in new_sockets:
                 poller.unregister(sock)
         curr_sockets = new_sockets
 
@@ -434,14 +433,14 @@ class OBCIControlPeer(object):
             if msg.type != "ping" and msg.type != "rq_ok":
                 self.logger.debug("got message: {0}".format(msg.type))
                 if msg.type == "get_tail":
-                    print self.msg_handlers
-        except ValueError, e:
-            print "{0} [{1}], Bad message format! {2}".format(
-                self.name, self.peer_type(), message)
+                    print(self.msg_handlers)
+        except ValueError as e:
+            print("{0} [{1}], Bad message format! {2}".format(
+                self.name, self.peer_type(), message))
             if sock.getsockopt(zmq.TYPE) == zmq.REP:
                 handler = self.msg_handlers.error
             msg = message
-            print str(e)
+            print(e)
         else:
             msg_type = msg.type
 

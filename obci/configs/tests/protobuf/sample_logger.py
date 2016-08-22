@@ -1,6 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import time
+
 
 class SampleLogger(object):
 
@@ -10,7 +11,7 @@ class SampleLogger(object):
 
         self.start_time = time.time()
         self.start_i = self.start_time
-        self.end_i = self.start_time+1
+        self.end_i = self.start_time + 1
 
         self.log = []
 

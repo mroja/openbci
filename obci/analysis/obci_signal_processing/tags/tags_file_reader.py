@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#
+#!/usr/bin/env python3
+
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
 # Project was initiated by Magdalena Michalska and Krzysztof Kulewski
 # as part of their MSc theses at the University of Warsaw.
@@ -22,18 +22,19 @@
 #      Mateusz Kruszynski <mateusz.kruszynski@gmail.com>
 #
 
-"""Module provides a simple class that is able to read tags xml file and 
+"""Module provides a simple class that is able to read tags xml file and
 give on demand subsequential tags."""
 
 import xml.dom.minidom
-from Queue import Queue
-import tag_utils
-import tags_logging as logger
+from . import tag_utils
+from . import tags_logging as logger
+from functools import cmp_to_key
 LOGGER = logger.get_logger('tags_file_reader')
 
 
 class TagsFileReader(object):
-    """A simple class that is able to read tags xml file and 
+
+    """A simple class that is able to read tags xml file and
     give on demand subsequential tags."""
 
     def __init__(self, p_tags_file_name):
@@ -50,7 +51,7 @@ class TagsFileReader(object):
             LOGGER.error("Couldn`t open tags file.")
         else:
             try:
-            #Analyse xml info file, get what we want and close the file.
+                # Analyse xml info file, get what we want and close the file.
                 self._parse_tags_file(l_tags_file)
             except xml.parsers.expat.ExpatError:
                 LOGGER.error("An error occured while parsing tags xml file.")
@@ -68,7 +69,7 @@ class TagsFileReader(object):
         l_xml_root_element = l_tags_doc.getElementsByTagName("tags")[0]
 
         for i_tag_node in l_xml_root_element.getElementsByTagName("tag"):
-             #Iterate over <tag> tags
+            # Iterate over <tag> tags
             l_raw_tag = {}
             for i_key in ['length', 'name', 'position', 'channelNumber']:
                 l_raw_tag[i_key] = i_tag_node.getAttribute(i_key)
@@ -78,10 +79,9 @@ class TagsFileReader(object):
                     l_raw_tag[i_node.tagName] = i_node.firstChild.nodeValue
                 except AttributeError:
                     pass
-            # TODO - in case tags aren`t sorted by start_timestamp, 
+            # TODO - in case tags aren`t sorted by start_timestamp,
             # sort them at the end of current method
             self._tags.append(tag_utils.unpack_tag_from_dict(l_raw_tag))
-            
 
         def cmp_tags(t1, t2):
             ts1 = t1['start_timestamp']
@@ -92,6 +92,5 @@ class TagsFileReader(object):
                 return 1
             else:
                 return -1
-
-
-        self._tags.sort(cmp_tags)
+        # warning - may slow down as hell
+        self._tags.sort(key=cmp_to_key(cmp_tags))

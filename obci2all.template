@@ -1,0 +1,22 @@
+### Commented entries have reasonable defaults.
+### Uncomment to edit them.
+# Source: <source package name; defaults to package name>
+Section: misc
+Priority: optional
+# Homepage: <enter URL here; no default>
+Standards-Version: 3.9.2
+
+Package: obci2
+Version: GIT_VERSION
+Maintainer: BrainTech <admin@braintech.pl>
+# Pre-Depends: <comma-separated list of packages>
+Depends: tmsi-dkms, python3-obci
+# Recommends: <comma-separated list of packages>
+# Suggests: <comma-separated list of packages>
+# Provides: <comma-separated list of packages>
+# Replaces: <comma-separated list of packages>
+Architecture: all
+# Copyright: GPL3+
+# Changelog: <changelog file; defaults to a generic changelog>
+# Readme: <README.Debian file; defaults to a generic one>
+Description: OpenBCI 2 EEG signal framework metapackage which includes all dependencies

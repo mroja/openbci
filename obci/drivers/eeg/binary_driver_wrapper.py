@@ -3,10 +3,8 @@
 
 import sys
 
-from multiplexer.multiplexer_constants import peers, types
 from obci.control.peer.configured_multiplexer_server import ConfiguredMultiplexerServer
 from obci.drivers.eeg.driver_comm import DriverComm
-from obci.configs import settings
 from obci.utils import context as ctx
 from obci.utils.openbci_logging import log_crash
 
@@ -14,13 +12,15 @@ import json
 
 SEP = ';'
 
+
 class BinaryDriverWrapper(ConfiguredMultiplexerServer, DriverComm):
+
     """A wrapper around c++ amplifier binaries with INI configuration support.
     """
     desc_params = dict(amplifier_name='name',
-                        physical_channels_no='physical_channels',
-                        sampling_rates='sampling_rates',
-                        channels_info='channels')
+                       physical_channels_no='physical_channels',
+                       sampling_rates='sampling_rates',
+                       channels_info='channels')
 
     @log_crash
     def __init__(self, addresses, type):
@@ -58,9 +58,9 @@ class BinaryDriverWrapper(ConfiguredMultiplexerServer, DriverComm):
 
     def store_driver_description(self, driver_output):
         if len(driver_output) < 500:
-            self.logger.info("This does not look good: "+driver_output)
-        amp_desc=json.loads(driver_output)
-        for par, desc_par in self.desc_params.iteritems():
+            self.logger.info("This does not look good: " + driver_output)
+        amp_desc = json.loads(driver_output)
+        for par, desc_par in self.desc_params.items():
             self.config.set_param(par, amp_desc[desc_par])
         self._extract_active_channels_info(amp_desc['channels'])
 
@@ -80,16 +80,15 @@ class BinaryDriverWrapper(ConfiguredMultiplexerServer, DriverComm):
 
         gains_str = SEP.join([str(g) for g in gains])
         offset_str = SEP.join([str(o) for o in offsets])
-        self.set_param('channel_gains',  gains_str)
+        self.set_param('channel_gains', gains_str)
         self.set_param('channel_offsets', offset_str)
-        self.logger.info('Set active channels: ' + str(active) + ', channel_gains: ' +\
-                                gains_str + ', channel_offsets: ' + offset_str)
-
+        self.logger.info('Set active channels: ' + str(active) + ', channel_gains: ' +
+                         gains_str + ', channel_offsets: ' + offset_str)
 
     def _find_channel_info(self, chan, channels_list):
-        match = [info for index, info in enumerate(channels_list) if \
-                                                    info['name'] == chan or \
-                                                    str(index) == chan]
+        match = [info for index, info in enumerate(channels_list) if
+                 info['name'] == chan or
+                 str(index) == chan]
         if not match:
             self.logger.error('Invalid channel name ' + chan)
             self.stop_sampling()
@@ -115,11 +114,3 @@ class BinaryDriverWrapper(ConfiguredMultiplexerServer, DriverComm):
                 if params[par] == '':
                     self.logger.error('Parameter ' + par + 'is empty!!! ABORTING....')
                     sys.exit(1)
-
-
-if __name__ == "__main__":
-    pass
-    # import settings as settings
-
-    # srv = BinaryDriverWrapper(settings.MULTIPLEXER_ADDRESSES)
-

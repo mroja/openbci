@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Author:
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
 #
@@ -11,7 +10,10 @@
 
 >>> px = p.InfoFileWriteProxy('./tescik.obci.svarog.info')
 
->>> px.set_attributes({'number_of_channels':2, 'sampling_frequency':128, 'channels_names': ['1','2'], 'file':'soufce.obci.dat', 'number_of_samples':3})
+>>> px.set_attributes({'number_of_channels':2, 'sampling_frequency':128, 'channels_names': ['1','2'],\
+                      'file':'soufce.obci.dat', 'number_of_samples':3\
+                      }\
+                     )\
 
 >>> px.finish_saving()
 './tescik.obci.svarog.info'
@@ -27,8 +29,11 @@
 >>> os.remove('./tescik.obci.svarog.info')
 
 """
+
+
 def run():
-    import doctest, sys
+    import doctest
+    import sys
     res = doctest.testmod(sys.modules[__name__])
     if res.failed == 0:
         print("All tests succeeded!")

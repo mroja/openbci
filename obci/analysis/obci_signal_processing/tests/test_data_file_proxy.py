@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Author:
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
@@ -56,7 +55,7 @@ True
 >>> py.get_next_value()
 Traceback (most recent call last):
 ...
-NoNextValue
+obci.analysis.obci_signal_processing.signal.signal_exceptions.NoNextValue
 
 >>> py.finish_reading()
 
@@ -70,18 +69,25 @@ True
 >>> py.get_next_values(3)
 Traceback (most recent call last):
 ...
-NoNextValue
+obci.analysis.obci_signal_processing.signal.signal_exceptions.NoNextValue
 >>> #warning here
+
+>>> py.finish_reading()
 
 >>> os.remove(f)
 
-
 """
+
+
 def run():
-    import doctest, sys
+    import doctest
+    import sys
     res = doctest.testmod(sys.modules[__name__])
     if res.failed == 0:
         print("All tests succeeded!")
+
+# def test_data_file_proxy():
+#     run()
 
 if __name__ == '__main__':
     run()

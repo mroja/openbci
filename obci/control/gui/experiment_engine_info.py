@@ -1,24 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+import io
+import time
+import socket
 
 import zmq
 from PyQt4 import QtCore
-import os
-import socket
-import io
-import codecs
-import subprocess
-import threading
-import time
-import sys
 
-from obci.control.common.message import send_msg, recv_msg, OBCIMessageTool, PollingObject
+from obci.control.common.message import send_msg, OBCIMessageTool, PollingObject
 from obci.acquisition import acquisition_helper
 from obci.control.launcher.launcher_messages import message_templates
 import obci.control.launcher.system_config as system_config
 import obci.control.launcher.launch_file_parser as launch_file_parser
 import obci.control.launcher.launcher_tools as launcher_tools
-import obci.control.launcher.subprocess_monitor as subprocess_monitor
 import obci.control.peer.peer_cmd as peer_cmd
 import obci.control.common.net_tools as net
 import obci.control.common.obci_control_settings as settings
@@ -28,8 +23,8 @@ MODE_ADVANCED = 'advanced'
 MODE_EXPERT = 'expert'
 MODES = [MODE_ADVANCED, MODE_BASIC]  # , MODE_EXPERT]
 
-DEFAULT_CATEGORY = u'Uncategorised'
-USER_CATEGORY = u'User defined'
+DEFAULT_CATEGORY = 'Uncategorised'
+USER_CATEGORY = 'User defined'
 
 SIGNAL_STORAGE_PEERS = {
     "signal_saver": "acquisition/signal_saver_peer.py",
@@ -120,12 +115,12 @@ class ExperimentEngineInfo(QtCore.QObject):
                 if self._addr_connectable(addr, machine):
                     try:
                         self.exp_req.connect(addr)
-                    except Exception, e:
-                        print addr, False
+                    except Exception as e:
+                        print(addr, False)
                     else:
                         connected = True
             if not connected:
-                print "Connection to experiment ", self.name, "UNSUCCESFUL!!!!!!"
+                print("Connection to experiment ", self.name, "UNSUCCESFUL!!!!!!")
                 return
 
         self.exp_config.uuid = launcher_data['uuid']
@@ -174,7 +169,7 @@ class ExperimentEngineInfo(QtCore.QObject):
                 launch_parser.parse(f, self.exp_config, apply_globals=True)
         except Exception as e:
             self.status.set_status(launcher_tools.NOT_READY, details=str(e))
-            print "config errror   ", str(e)
+            print("config errror   ", str(e))
             return False, str(e)
 
         rd, details = self.exp_config.config_ready()
@@ -182,7 +177,7 @@ class ExperimentEngineInfo(QtCore.QObject):
             self.status.set_status(launcher_tools.READY_TO_LAUNCH)
         else:
             self.status.set_status(launcher_tools.NOT_READY, details=details)
-            print rd, details
+            print(rd, details)
 
         return True, None
 
@@ -192,21 +187,21 @@ class ExperimentEngineInfo(QtCore.QObject):
         response = self.comm_exp(self.mtool.fill_msg("get_experiment_scenario"))
         if not response:
             return False, "No response from experient"
-        print "GOT SCENARIO", response.scenario
+        print("GOT SCENARIO", response.scenario)
         return self._process_experiment_scenario(response.scenario)
 
     def _process_experiment_scenario(self, json_scenario):
         jsonpar = launch_file_parser.LaunchJSONParser(
             launcher_tools.obci_root(), settings.DEFAULT_SCENARIO_DIR)
-        inbuf = io.BytesIO(json_scenario.encode('utf-8'))
+        inbuf = io.StringIO(json_scenario)
         jsonpar.parse(inbuf, self.exp_config)
-        print "MY PEEEEERS:", self.exp_config.peers.keys()
+        print("MY PEEEEERS:", self.exp_config.peers.keys())
         rd, details = self.exp_config.config_ready()
         if rd:
             self.status.set_status(launcher_tools.READY_TO_LAUNCH)
         else:
             self.status.set_status(launcher_tools.NOT_READY, details=details)
-            print rd, details
+            print(rd, details)
         return True, None
 
     def _get_experiment_details(self):
@@ -218,7 +213,7 @@ class ExperimentEngineInfo(QtCore.QObject):
 
         self.origin_machine = exp_msg.origin_machine
 
-        for peer, short_info in exp_msg.peers.iteritems():
+        for peer, short_info in exp_msg.peers.items():
             # self.exp_config.set_peer_machine(peer, short_info['machine'])
 
             msg = self.comm_exp(self.mtool.fill_msg("get_peer_info",
@@ -227,18 +222,17 @@ class ExperimentEngineInfo(QtCore.QObject):
                 return
 
             ext_defs = {}
-            for name, defi in msg.external_params.iteritems():
+            for name, defi in msg.external_params.items():
                 ext_defs[name] = defi[0] + '.' + defi[1]
-            strict_update = os.path.exists(launcher_tools.expand_path(self.launch_file))
             self.exp_config.update_peer_config(peer, dict(config_sources=msg.config_sources,
                                                           launch_dependencies=msg.launch_dependencies,
                                                           local_params=msg.local_params,
                                                           external_params=ext_defs))
 
-        for peer, status in exp_msg.experiment_status['peers_status'].iteritems():
+        for peer, status in exp_msg.experiment_status['peers_status'].items():
             self.status.peer_status(peer).set_status(
                 status['status_name'],
-                                            details=status['details'])
+                details=status['details'])
 
     def parameters(self, peer_id, mode):
         params = {}
@@ -250,7 +244,7 @@ class ExperimentEngineInfo(QtCore.QObject):
             params = peer.config.local_params
             for param in peer.config.local_params:
                 params[param] = (self.exp_config.param_value(peer_id, param), None)
-            for param, defi in peer.config.ext_param_defs.iteritems():
+            for param, defi in peer.config.ext_param_defs.items():
                 source_symbol = defi[0]
                 source = peer.config.config_sources[source_symbol]
                 params[param] = (self.exp_config.param_value(peer_id, param), source + '.' + defi[1])
@@ -260,7 +254,7 @@ class ExperimentEngineInfo(QtCore.QObject):
         send_msg(self.exp_req, msg)
         response, _ = self.poller.poll_recv(self.exp_req, timeout=3000)
         if not response:
-            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!1 no response to ", msg
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!1 no response to ", msg)
             self.exp_req.close()
             self.exp_req = self.ctx.socket(zmq.REQ)
             for addr in self.launcher_data['rep_addrs']:
@@ -297,7 +291,7 @@ class ExperimentEngineInfo(QtCore.QObject):
                     args += ['-p', arg, self.exp_config.param_value(peer_id, arg)]
         pack = peer_cmd.peer_overwrites_pack(args)
         d['overwrites'] = pack
-        print "overwrites pack!!!!!!!!!!!!!!!!!!!!!  ", pack
+        print("overwrites pack!!!!!!!!!!!!!!!!!!!!!  ", pack)
         return d
 
     def peer_info(self, peer_id):
@@ -306,9 +300,16 @@ class ExperimentEngineInfo(QtCore.QObject):
     def add_peer(self, peer_id, peer_path, config_sources=None, launch_deps=None,
                  custom_config_path=None, param_overwrites=None, machine=None):
 
-        return launch_file_parser.extend_experiment_config(self.exp_config, peer_id, peer_path,
-                                                           config_sources, launch_deps,
-                                                           custom_config_path, param_overwrites, machine, apply_globals=True)
+        return launch_file_parser.extend_experiment_config(
+            self.exp_config,
+            peer_id,
+            peer_path,
+            config_sources,
+            launch_deps,
+            custom_config_path,
+            param_overwrites,
+            machine,
+            apply_globals=True)
 
     def enable_signal_storing(self, store_options):
         if not store_options:
@@ -318,23 +319,23 @@ class ExperimentEngineInfo(QtCore.QObject):
             store_options = dict(store_options)
             store_options['save_file_name'] = store_options['save_file_name'] + "_" + str(time.time())
 
-        for peer, peer_path in SIGNAL_STORAGE_PEERS.iteritems():
+        for peer, peer_path in SIGNAL_STORAGE_PEERS.items():
             if peer not in self.exp_config.peers:
                 self.add_peer(peer, peer_path)
 
         saver = self.exp_config.peers['signal_saver']
         params = saver.config.param_values
-        for opt, val in store_options.iteritems():
+        for opt, val in store_options.items():
             if opt in saver.config.param_values:
                 params[opt] = val
 
     def stop_storing(self, client):
         join_response = client.join_experiment(self.uuid, "dummy_module_" + str(time.time()), "")
         if join_response is None:
-            print "experiment engine info - ERROR - connection timeout on stop signal storing!"
+            print("experiment engine info - ERROR - connection timeout on stop signal storing!")
             return
         if not join_response.type == "rq_ok":
-            print "experiment engine info - ERROR - join error on stop signal storing!"
+            print("experiment engine info - ERROR - join error on stop signal storing!")
             return
         mx_addr = join_response.params["mx_addr"].split(':')
         # hang and wait ...

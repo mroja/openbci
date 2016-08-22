@@ -1,2 +1,0 @@
-#!/bin/bash
-pyrcc4 resources/resources.qrc -o ../resources_rc.py

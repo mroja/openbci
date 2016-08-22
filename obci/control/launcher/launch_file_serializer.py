@@ -1,20 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import ConfigParser
+import configparser
 import os
-import warnings
 import codecs
 import io
 import json
 
-import obci.control.peer.peer_config as peer_config
 import obci.control.peer.peer_config_serializer as peer_config_serializer
-from obci.control.launcher.system_config import OBCIExperimentConfig, OBCISystemConfigError
-from obci.control.launcher.launcher_tools import expand_path, default_config_path
 from obci.control.launcher.launch_file_parser import parse_peer_default_config
 import obci.control.common.obci_control_settings as settings
 import obci.control.launcher.launcher_tools as launcher_tools
+
 PEERS = "peers"
 CONFIG_SRCS = "config_sources"
 LAUNCH_DEPS = "launch_dependencies"
@@ -60,7 +57,7 @@ class LaunchFileSerializerINI(LaunchFileSerializer):
     """
 
     def _init_tools(self):
-        self.parser = ConfigParser.RawConfigParser()
+        self.parser = configparser.RawConfigParser()
         self.parser.add_section(PEERS)
 
     def _prepare(self, system_config, dump_file):
@@ -70,7 +67,7 @@ class LaunchFileSerializerINI(LaunchFileSerializer):
         self.parser.set(PEERS, "scenario_dir", system_config.scenario_dir)
 
     def _dump_peer_configs(self, system_config, dump_file, dump_dir):
-        for peer, descriptor in system_config.peers.iteritems():
+        for peer, descriptor in system_config.peers.items():
             peer_section = PEERS + "." + peer
             self.parser.add_section(peer_section)
             self.parser.set(peer_section, "path", descriptor.path)
@@ -89,14 +86,14 @@ class LaunchFileSerializerINI(LaunchFileSerializer):
         if config_sources:
             conf_section = PEERS + "." + peer_id + "." + CONFIG_SRCS
             self.parser.add_section(conf_section)
-            for src_name, src in config_sources.iteritems():
+            for src_name, src in config_sources.items():
                 self.parser.set(conf_section, src_name, src)
 
     def _dump_peer_launch_deps(self, peer_id, launch_deps):
         if launch_deps:
             conf_section = PEERS + "." + peer_id + "." + LAUNCH_DEPS
             self.parser.add_section(conf_section)
-            for dep_name, dep in launch_deps.iteritems():
+            for dep_name, dep in launch_deps.items():
                 self.parser.set(conf_section, dep_name, dep)
 
     def _dump_peer(self, peer_descriptor, dump_file, dump_dir):
@@ -135,7 +132,7 @@ class LaunchFileSerializerJSON(LaunchFileSerializer):
         self.dic[PEERS]["scenario_dir"] = system_config.scenario_dir
 
     def _dump_peer_configs(self, system_config, dump_file, dump_dir):
-        for peer, descriptor in system_config.peers.iteritems():
+        for peer, descriptor in system_config.peers.items():
             peer_cfg = self.dic[PEERS][peer] = {}
             peer_cfg["path"] = descriptor.path
 
@@ -156,21 +153,21 @@ class LaunchFileSerializerJSON(LaunchFileSerializer):
 
         conf = '{}'
         if diff_src or diff_deps or diff_params:
-            buf = io.BytesIO()
+            buf = io.StringIO()
             ser.serialize_diff(base_config, peer_descriptor.config, buf)
-            conf = unicode(buf.getvalue())
+            conf = buf.getvalue()
         return conf
 
     def _dump_peer_config_sources(self, peer_id, config_sources):
         if config_sources:
             conf_section = self.dic[PEERS][peer_id][CONFIG_SRCS] = {}
-            for src_name, src in config_sources.iteritems():
+            for src_name, src in config_sources.items():
                 conf_section[src_name] = src
 
     def _dump_peer_launch_deps(self, peer_id, launch_deps):
         if launch_deps:
             conf_section = self.dic[PEERS][peer_id][LAUNCH_DEPS] = {}
-            for dep_name, dep in launch_deps.iteritems():
+            for dep_name, dep in launch_deps.items():
                 conf_section[dep_name] = dep
 
     def _save(self, p_file_obj, dump_dir=None):
@@ -178,14 +175,14 @@ class LaunchFileSerializerJSON(LaunchFileSerializer):
 
 
 def serialize_scenario_json(p_system_config):
-    buf = io.BytesIO()
+    buf = io.StringIO()
     ser = LaunchFileSerializerJSON()
     ser.serialize(p_system_config, None, buf)
-    return unicode(buf.getvalue())
+    return buf.getvalue()
 
 if __name__ == '__main__':
-    import launch_file_parser
-    import system_config
+    from . import launch_file_parser
+    from . import system_config
 
     launch_parser = launch_file_parser.LaunchFileParser(
         launcher_tools.obci_root(), settings.DEFAULT_SCENARIO_DIR)
@@ -194,20 +191,20 @@ if __name__ == '__main__':
     with open(launcher_tools.expand_path('scenarios/cebit/switch/hci_switch_mult_dummy.ini')) as f:
         launch_parser.parse(f, config)
     rd, details = config.config_ready()
-    print rd, details
-    print "INFO A"
-    print config.all_param_values('amplifier')
-    print "\n *********************************\n"
+    print(rd, details)
+    print("INFO A")
+    print(config.all_param_values('amplifier'))
+    print("\n *********************************\n")
     json_ser = serialize_scenario_json(config)
-    print json_ser
+    print(json_ser)
 
     jsonpar = launch_file_parser.LaunchJSONParser(
         launcher_tools.obci_root(), settings.DEFAULT_SCENARIO_DIR)
-    inbuf = io.BytesIO(json_ser.encode(encoding='utf-8'))
+    inbuf = io.StringIO(json_ser)
     new_conf = system_config.OBCIExperimentConfig()
 
     jsonpar.parse(inbuf, new_conf)
     rd, details = new_conf.config_ready()
-    print "INFO B"
-    print rd, details
-    print new_conf.all_param_values('amplifier')
+    print("INFO B")
+    print(rd, details)
+    print(new_conf.all_param_values('amplifier'))

@@ -15,7 +15,7 @@ message_templates = {
 
     "get_experiment_info": dict(),
     "experiment_info": dict(experiment_status='', launch_file_path='', scenario_dir='',
-                            origin_machine='',    peers='', unsupervised_peers='', uuid='', status='',
+                            origin_machine='', peers='', unsupervised_peers='', uuid='', status='',
                             name=''),
 
     "get_peer_info": dict(peer_id=''),
@@ -41,7 +41,8 @@ message_templates = {
                                       launch_file='', old_name='', old_launch_file=''),
 
     "get_experiment_contact": dict(strname=''),
-    "experiment_contact": dict(name='', uuid='', rep_addrs='', pub_addrs='', tcp_addrs='', machine='', status_name='', details=''),
+    "experiment_contact":
+        dict(name='', uuid='', rep_addrs='', pub_addrs='', tcp_addrs='', machine='', status_name='', details=''),
 
     "launch_process": dict(proc_type='', name='', path='', args='', machine_ip='',
                            capture_io='', stdout_log='', stderr_log=''),
@@ -60,7 +61,7 @@ message_templates = {
     "kill_experiment": dict(strname='', force=''),
     "kill_sent": dict(experiment_id=''),
 
-    "start_mx": dict(args=''),
+    "start_broker": dict(args=''),
     "start_config_server": dict(mx_data='', args='', restore_config=''),
     "config_server_ready": dict(),
     "start_peers": dict(mx_data='', add_launch_data=''),
@@ -125,10 +126,10 @@ if __name__ == '__main__':
     used = []
     for temp in [msg.common_templates, message_templates]:
         for msg in temp:
-            if not msg in used:
-                print '//-------------------------   ', msg, '- full   ---------------------'
-                print tool.fill_msg(msg)
-                print '//--', msg, '- without base   -----'
+            if msg not in used:
+                print('//-------------------------   ', msg, '- full   ---------------------')
+                print(tool.fill_msg(msg))
+                print('//--', msg, '- without base   -----')
                 st = json.dumps(temp[msg], indent=4)
-                print st
+                print(st)
                 used.append(msg)

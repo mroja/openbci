@@ -1,30 +1,33 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Author:
 #     Mateusz Kruszyński <mateusz.kruszynski@gmail.com>
 #
 
 import struct
-import sys, os.path
+import sys
+import os.path
 from obci.configs import variables_pb2
 
-import signal_exceptions
-import signal_constants
-import signal_logging as logger
+from . import signal_exceptions
+from . import signal_constants
+from . import signal_logging as logger
 LOGGER = logger.get_logger("data_generic_write_proxy", 'info')
 
 SAMPLE_STRUCT_TYPES = signal_constants.SAMPLE_STRUCT_TYPES
 
+
 class DataGenericWriteProxy(object):
+
     """
-    A class representing data file. 
-    It should be an abstraction for saving raw data into a file. 
-    Decision whether save signal to one or few separate files should be made here 
+    A class representing data file.
+    It should be an abstraction for saving raw data into a file.
+    Decision whether save signal to one or few separate files should be made here
     and should be transparent regarding below interface - the interface should remain untouched.
     Public interface:
     - finish_saving() - closes data file and return its path,
     - data_received(p_data_sample) - gets and saves next sample of signal
     """
+
     def __init__(self, p_file_path, p_unpack_later=False, p_append_ts=False, p_sample_type='FLOAT'):
         """Open p_file_name file in p_dir_path directory."""
         self._number_of_samples = 0
@@ -35,12 +38,12 @@ class DataGenericWriteProxy(object):
 
         try:
             if self._unpack_later:
-            # Create a temporary file with .tmp extension
-            # In finish_saving we read from that file and create another 
-            # for efficency reasons
-                self._file = open(self._file_path+'.tmp', 'wb') #open file in a binary mode
+                # Create a temporary file with .tmp extension
+                # In finish_saving we read from that file and create another
+                # for efficency reasons
+                self._file = open(self._file_path + '.tmp', 'wb')  # open file in a binary mode
             else:
-                self._file = open(self._file_path, 'wb') #open file in a binary mode
+                self._file = open(self._file_path, 'wb')  # open file in a binary mode
 
         except IOError:
             LOGGER.error("Error! Can`t create a file!!!. path: " +
@@ -61,7 +64,7 @@ class DataGenericWriteProxy(object):
         self.first_sample_timestamp = timestamp
 
     def finish_saving(self):
-        """Close the file, return a tuple - 
+        """Close the file, return a tuple -
         file`s name and number of samples."""
         self._file.flush()
         self._file.close()
@@ -75,7 +78,7 @@ class DataGenericWriteProxy(object):
 
         final_file = open(self._file_path, 'w')
         # Open once more temporary file with protobuf data
-        temp_file = open(self._file_path+'.tmp', 'r')
+        temp_file = open(self._file_path + '.tmp', 'r')
         while True:
             msg = temp_file.read(self._data_len)
             if len(msg) == 0:
@@ -84,10 +87,10 @@ class DataGenericWriteProxy(object):
 
         final_file.flush()
         final_file.close()
-        
+
         # Close and remove temporary file
         temp_file.close()
-        os.remove(self._file_path+'.tmp')
+        os.remove(self._file_path + '.tmp')
 
         return self._file_path, self._number_of_samples
 
@@ -111,10 +114,10 @@ class DataGenericWriteProxy(object):
             try:
                 strs = [struct.pack(self._sample_struct_type, ch) for ch in s.channels]
                 if self._append_ts:
-                    strs.append(struct.pack(self._sample_struct_type, ts-self.first_sample_timestamp))
+                    strs.append(struct.pack(self._sample_struct_type, ts - self.first_sample_timestamp))
             except struct.error:
                 LOGGER.error("Error while writhing to file. Bad sample format.")
-                raise(signal_exceptions.BadSampleFormat())
+                raise signal_exceptions.BadSampleFormat()
 
-            samples.append(''.join(strs))
-        return ''.join(samples)
+            samples.append(b''.join(strs))
+        return b''.join(samples)

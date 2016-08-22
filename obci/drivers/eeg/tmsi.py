@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#
+#!/usr/bin/env python3
 # OpenBCI - framework for Brain-Computer Interfaces based on EEG signal
 # Project was initiated by Magdalena Michalska and Krzysztof Kulewski
 # as part of their MSc theses at the University of Warsaw.
@@ -22,6 +21,8 @@
 #
 # Author:
 #      Krzysztof Kulewski <kulewski@gmail.com>
+import math
+from functools import reduce
 
 """
 Library to handle protocol used by TMSi EEG Amplifiers.
@@ -29,44 +30,45 @@ Library to handle protocol used by TMSi EEG Amplifiers.
 
 __author__ = "kulewski@gmail.com (Krzysztof Kulewski)"
 
-import math
-
 WORD_SIZE = 2  #: word size in bytes
+
 
 def number_to_string_word(number):
     """
     Convert a number 0..65535 to two byte string representation.
     First byte is less significant.
-    
-    @type number:   number
-    @param number:  number to be converted.
-    @rtype:         string
-    @return:        two byte string containing representation of a word.
+
+    :type number:   number
+    :param number:  number to be converted.
+    :rtype:         string
+    :return:        two byte string containing representation of a word.
     """
     return chr(number % 256) + chr(number / 256)
+
 
 def string_word_to_number(data):
     """
     Convert a two byte string representation of a number back into number.
     First byte is less significant.
-    
-    @type data:     string
-    @param data:    two byte string containing representation of a word.
-    @rtype:         number
-    @return:        a number described by data parameter.
-    """        
+
+    :type data:     string
+    :param data:    two byte string containing representation of a word.
+    :rtype:         number
+    :return:        a number described by data parameter.
+    """
     assert len(data) == WORD_SIZE, "Word size invalid"
     return ord(data[1]) * 256 + ord(data[0])
+
 
 def calculate_checksum(data):
     """
     Calculates checksum of a packet and return two byte (one word) string
     containing it.
-    
-    @type data:     string
-    @param data:    data we want checksum of
-    @rtype:         string (two byte) representing checksum
-    @return:        checksum of data
+
+    :type data:     string
+    :param data:    data we want checksum of
+    :rtype:         string (two byte) representing checksum
+    :return:        checksum of data
     """
     word_sum = 0
     for i in range(len(data)):
@@ -74,15 +76,16 @@ def calculate_checksum(data):
     word_sum = (65536 - word_sum) % 65536
     return number_to_string_word(word_sum)
 
+
 def num_to_bits(num):
     """
     Convert number into its binary representation (list of bits).
     Number has to be from 0..255 range.
-    
-    @type num:  number
-    @param num: number to be converted into bit representation
-    @rtype:     list of ints
-    @return:    list of bits representing number num
+
+    :type num:  number
+    :param num: number to be converted into bit representation
+    :rtype:     list of ints
+    :return:    list of bits representing number num
     """
     bits = []
     for _ in range(8):
@@ -90,15 +93,16 @@ def num_to_bits(num):
         num = num / 2
     return bits
 
+
 def bits_to_num(bits):
     """
     Convert bit representation of a number (as large as you can imagine) back
     into number - int.
-    
-    @type bits:     list of ints
-    @param bits:    binary representation of a number
-    @rtype:         number
-    @return:        number represented by a given list of bits
+
+    :type bits:     list of ints
+    :param bits:    binary representation of a number
+    :rtype:         number
+    :return:        number represented by a given list of bits
     """
     bits2 = bits[:]
     bits2.reverse()
@@ -107,14 +111,15 @@ def bits_to_num(bits):
         num = 2 * num + bit
     return num
 
+
 def encode_tmsi_bluetooth_number(num):
     """
     Convert number into TMSi internal format.
-    
-    @type num:      int
-    @param num:     number to be converted
-    @rtype:         string (3 bytes)
-    @return:        number represented in internal TMSi format 
+
+    :type num:      int
+    :param num:     number to be converted
+    :rtype:         string (3 bytes)
+    :return:        number represented in internal TMSi format
     """
     sign = num < 0
     if sign:
@@ -127,25 +132,28 @@ def encode_tmsi_bluetooth_number(num):
     assert num / 256 == 0, "To big number to be encoded in this format"
     return data
 
+
 def decode_tmsi_bluetooth_number(data):
     """
     Convert number in TMSi internal format into int.
-    
-    @type data:     string (3 bytes)
-    @param data:    number represented in internal TMSi format
-    @rtype:         int
-    @return:        number after conversion
+
+    :type data:     string (3 bytes)
+    :param data:    number represented in internal TMSi format
+    :rtype:         int
+    :return:        number after conversion
     """
     return ord(data[0]) + \
-           ord(data[1]) * 256 + \
-           ord(data[2]) * 65536 - \
+        ord(data[1]) * 256 + \
+        ord(data[2]) * 65536 - \
            (2 ** 24 if ord(data[2]) > 128 else 0)
 
+
 class PacketType(object):
+
     """
     This class names all suported packet types.
     """
-    
+
     TMS_ACKNOWLEDGE = 0x00
     TMS_CHANNEL_DATA = 0x01
     TMS_FRONTEND_INFO = 0x02
@@ -154,11 +162,11 @@ class PacketType(object):
     TMS_VL_DELTA_DATA = 0x2f
     TMS_VL_DELTA_INFO_REQUEST = 0x30
     TMS_VL_DELTA_INFO = 0x31
-    
+
     all_known_types = []  #: list of all known types, dynamically generated
     names = {}  #: dict of name => value, dynamically generated
     values = {}  #: dict of value => name, dynamically generated
-    
+
     def generate_internals(self):
         """
         Generate internal fields: all_known_types, names, values
@@ -169,13 +177,13 @@ class PacketType(object):
                 self.all_known_types.append(value)
                 self.names[key] = value
                 self.values[value] = key
-    
+
     def print_types(self):
         """
         Show all available packet types.
         """
-        print self.names
-    
+        print(self.names)
+
     def __init__(self):
         """
         Generates all_known_types, names, values.
@@ -187,15 +195,16 @@ PACKET_TYPE = PacketType()  # we want one instance of this class
 
 
 class Header(object):
+
     """
-    Header of data block. 
+    Header of data block.
     Does not support packets longer than 254 words (such packets)
     have variable header length.
-    
+
     TMSi protocol header is in format:
     - 2 start bytes: \xaa\xaa
     - length byte: number of words in packet
-    - 1 byte: type of packet 
+    - 1 byte: type of packet
     """
 
     HEADER_SIZE = 4  #: size of a header in bytes
@@ -210,13 +219,13 @@ class Header(object):
         Construct packet header based on packet type and packet length.
         Set raw representation of header based on given parameters.
         Validate given packet type against list of all supported packet types.
-        
-        @type packet_type:  number (one of PACKET_TYPE constants)
-        @param packet_type: type of a packet for which we are creating header
-        @type length:       number
-        @param length:      length of a packet (in bytes)
-        @rtype:             Header
-        @return:            new Header instance.
+
+        :type packet_type:  number (one of PACKET_TYPE constants)
+        :param packet_type: type of a packet for which we are creating header
+        :type length:       number
+        :param length:      length of a packet (in bytes)
+        :rtype:             Header
+        :return:            new Header instance.
         """
         assert length % 2 == 0, "Length should be an even number"
         self = cls()
@@ -226,21 +235,21 @@ class Header(object):
             "Invalid (or not supported) packet type"
         self.raw = self.HEADER_START + chr(length / 2) + chr(packet_type)
         return self
-    
+
     @classmethod
     def read_one(cls, stream, search=False):
         """
         Reads one header from stream and returns new Header instance.
         If search options is present then search for header start in the stream
         by dropping "bad" characters.
-        
-        @type stream:   object with read(int) method (some file or stream)
-        @param stream:  Stream containing header data.
-        @type search:   bool
-        @param search:  True iff bytes not starting header should be dropped
+
+        :type stream:   object with read(int) method (some file or stream)
+        :param stream:  Stream containing header data.
+        :type search:   bool
+        :param search:  True iff bytes not starting header should be dropped
                         from the beginning of the stream.
-        @rtype:         Header
-        @return:        new Header instance.
+        :rtype:         Header
+        :return:        new Header instance.
         """
         self = cls()
         data = stream.read(4)
@@ -263,25 +272,26 @@ class Header(object):
             "Packet length exceeds max length"
         self.raw = data
         return self
-    
+
     def __init__(self):
         object.__init__(self)
         self.packet_type = -1  # type of a packet, one defined in PACKET_TYPE
         self.length = -1  # packet length in bytes, not inc. header and checksum
         self.raw = ""  # raw binary value of header
-    
+
     def __str__(self):
         return "TMSi Packet Header describing packet of type %s and length " \
             "of %d bytes." % (PACKET_TYPE.values[self.packet_type], self.length)
 
 
 class Packet(object):
+
     """
     Wire packet base class.
-    
+
     This class is the base of all packet classes. It provides common options
     related functionaility.
-    
+
     TMSi protocol packet is in format:
     - 4 byte header: if packet is shorter than 254 words (other are unsupported)
     - packet data
@@ -294,13 +304,13 @@ class Packet(object):
         """
         Construct packet based on packet type and packet data.
         Calculate checksum of a packet.
-        
-        @type packet_type:  number (one of PACKET_TYPE constants)
-        @param packet_type: type of a packet for which we are creating header
-        @type data:         string
-        @param length:      data inside a packet
-        @rtype:             Packet
-        @return:            new Packet instance.
+
+        :type packet_type:  number (one of PACKET_TYPE constants)
+        :param packet_type: type of a packet for which we are creating header
+        :type data:         string
+        :param length:      data inside a packet
+        :rtype:             Packet
+        :return:            new Packet instance.
         """
         self = cls()
         self.data = data
@@ -312,14 +322,14 @@ class Packet(object):
     def read_one(cls, stream, search=False):
         """
         Reads one data packet from stream and returns Packet instance.
-        
-        @type stream:   object with read(int) method (some file or stream)
-        @param stream:  Stream containing packet (including header and checksum)
-        @type search:   bool
-        @param search:  True iff bytes not starting header should be dropped
+
+        :type stream:   object with read(int) method (some file or stream)
+        :param stream:  Stream containing packet (including header and checksum)
+        :type search:   bool
+        :param search:  True iff bytes not starting header should be dropped
                         from the beginning of the stream.
-        @rtype:         Packet
-        @return:        new Packet instance.
+        :rtype:         Packet
+        :return:        new Packet instance.
         """
         self = cls()
         self.header = Header.read_one(stream, search)
@@ -341,23 +351,23 @@ class Packet(object):
     def get_word(self, index):
         """
         Get number represented by index-th word of packet.
-        
-        @type index:    number
-        @param index:   index of word (in word-size units)
-        @rtype:         number
-        @return:        value represented by index-th word of packet
+
+        :type index:    number
+        :param index:   index of word (in word-size units)
+        :rtype:         number
+        :return:        value represented by index-th word of packet
         """
-        return string_word_to_number(self.data[index * WORD_SIZE: \
-            index * WORD_SIZE + WORD_SIZE])
-        
+        return string_word_to_number(self.data[index * WORD_SIZE:
+                                               index * WORD_SIZE + WORD_SIZE])
+
     def set_word(self, index, value):
         """
         Set a word in packet.
-        
-        @type index:    number
-        @param index:   index of word (in word-size units)
-        @type value:    number
-        @param value:   value to be put into index-th word of packet
+
+        :type index:    number
+        :param index:   index of word (in word-size units)
+        :type value:    number
+        :param value:   value to be put into index-th word of packet
         """
         word = number_to_string_word(value)
         bits = list(self.data)
@@ -375,9 +385,9 @@ class Packet(object):
         """
         Get raw packet data.
         Serialize packet.
-        
-        @rtype:     string
-        @return:    raw representation of packet (header, data, checksum)
+
+        :rtype:     string
+        :return:    raw representation of packet (header, data, checksum)
         """
         return self.header.raw + self.data + self.checksum
 
@@ -386,23 +396,24 @@ class Packet(object):
         Check if packet has packet type coherent with declared packet type
         (if any).
         """
-        if self.declared_type != None:
+        if self.declared_type is not None:
             assert self.header.packet_type == self.declared_type, \
                 "Wrong packet type"
-    
+
     def __str__(self):
         return "TMSi Packet of type %s with data length %s bytes [total " \
-            "%d bytes]." % (PACKET_TYPE.values[self.header.packet_type], \
-                self.header.length, 
-                self.header.HEADER_SIZE + self.header.length + \
-                    self.CHECKSUM_SIZE)
+            "%d bytes]." % (PACKET_TYPE.values[self.header.packet_type],
+                            self.header.length,
+                            self.header.HEADER_SIZE + self.header.length +
+                            self.CHECKSUM_SIZE)
 
 
 class Acknowledge(Packet):
+
     """
     Represents acknowledge packet.
     """
-    
+
     ERRORS = {
         0x01: "unknown or not implemented blocktype",
         0x02: "CRC error in received block",
@@ -421,33 +432,35 @@ class Acknowledge(Packet):
         0x1B: "adress flash memory out of range",
         0x1C: "Erasing not possible because battery low",
     }
-    
+
     def __init__(self):
         super(Acknowledge, self).__init__()
         self.declared_type = PACKET_TYPE.TMS_ACKNOWLEDGE
-    
+
     def get_error_code(self):
         """
         Get error code.
 
-        @rtype:     number
-        @return:    error code
+        :rtype:     number
+        :return:    error code
         """
         return self.get_word(1)
-        
+
     def is_error(self):
         """
         Check if there is an error.
         Use get_error method to get error text.
-        
-        @rtype:     bool
-        @return:    True iff there is an error"""
+
+        :rtype:     bool
+        :return:    True iff there is an error"""
         return self.get_error_code() != 0
-    
+
     def get_error(self):
         """
-        @rtype:     string or None
-        @return:    None if there is no error. Some error text (one from
+        Get error string.
+
+        :rtype:     string or None
+        :return:    None if there is no error. Some error text (one from
                     values from ERROR dictionary) in the opposite case.
         """
         if self.is_error():
@@ -457,6 +470,7 @@ class Acknowledge(Packet):
 
 
 class FrontendInfo(Packet):
+
     """
     Represents FrontendInfo packet.
     """
@@ -468,36 +482,36 @@ class FrontendInfo(Packet):
     MAX_DIVIDER = 4
     MODE_STREAM = 0
     MODE_STOP = 1
-    
+
     def __init__(self):
         super(FrontendInfo, self).__init__()
         self.declared_type = PACKET_TYPE.TMS_FRONTEND_INFO
-    
+
     def get_base_sample_rate(self):
         """
         Extract base sample rate frequency from FrontendInfo packet.
-        
-        @rtype:     number
-        @return:    base sample frequency of amplifier
+
+        :rtype: number
+        :return: base sample frequency of amplifier
         """
         return self.get_word(self.BASE_SAMPLE_RATE_INDEX)
-    
+
     def get_number_of_data_channels(self):
         """
         Extract number of channels from FrontendInfo packet.
-        
-        @rtype:     number
-        @return:    number of hardware channels in amplifier
+
+        :rtype: number
+        :return: number of hardware channels in amplifier
         """
         return self.get_word(self.NUMBER_OF_CHANNELS_INDEX) - \
             self.NUMBER_OF_HELP_CHANNELS
-    
+
     def modify_sample_rate(self, frequency):
         """
         Set sample frequency in (obtained from device) FrontendInfo packet.
-        
-        @type frequency:    number
-        @param frequency:   frequency to be set to
+
+        :type frequency:    number
+        :param frequency:   frequency to be set to
         """
         base = self.get_base_sample_rate()
         divider = math.log(base / frequency, 2)
@@ -505,13 +519,13 @@ class FrontendInfo(Packet):
         divider = int(divider)
         assert divider in range(self.MAX_DIVIDER + 1), "Unsupported frequency"
         self.set_word(self.CURRENT_SAMPLE_RATE_INDEX, divider)
-    
+
     def start(self):
         """
         Modify FrontendInfo packet to enable data streaming.
         """
         self.set_word(self.MODE_INDEX, self.MODE_STREAM)
-    
+
     def stop(self):
         """
         Modify FrontendInfo packet to disable streaming.
@@ -520,6 +534,7 @@ class FrontendInfo(Packet):
 
 
 class ChannelData(Packet):
+
     """
     Packet containing channel data NOT encoded using VL Delta compression.
     """
@@ -536,22 +551,22 @@ class ChannelData(Packet):
     def set_number_of_channels(self, number_of_channels):
         """
         Set number of channels (obtainted from FrontendInfo).
-        
-        @type number_of_channels:   number
-        @param number_of_channels:  number of channels (from FrontendInfo)
+
+        :type number_of_channels:   number
+        :param number_of_channels:  number of channels (from FrontendInfo)
         """
         self.number_of_channels = number_of_channels
 
     def extract_channel_data(self, channel_number):
         """
         Extract data of single channel.
-        
-        @type channel_number:   number
-        @param channel_number:  number of channel we want to extract data from
-        @rtype:                 number
-        @return:                value of channel_number-th channel data
+
+        :type channel_number:   number
+        :param channel_number:  number of channel we want to extract data from
+        :rtype:                 number
+        :return:                value of channel_number-th channel data
         """
-        return decode_tmsi_bluetooth_number( \
+        return decode_tmsi_bluetooth_number(
             self.data[3 * channel_number:3 * channel_number + 3])
 
     def get_digi(self):
@@ -559,122 +574,126 @@ class ChannelData(Packet):
         Get Digi channel status.
         This channel contains data such as battery level, on off button status,
         trigger status.
-        
-        @rtype:     number
-        @return:    byte containing flags (on/off button etc.) set in packet
+
+        :rtype:     number
+        :return:    byte containing flags (on/off button etc.) set in packet
         """
         return ord(self.data[3 * self.number_of_channels])
 
     def check_digi(self, condition):
         """
         Check if flag condition is set in digi channel.
-        
-        @type condition:    number
-        @param condition:   Bit flag representing some state. Valid flags are:
+
+        :type condition:    number
+        :param condition:   Bit flag representing some state. Valid flags are:
                             ON_OFF_BUTTON, TRIGGER_ACTIVE, BATTERY_LOW.
-        @rtype:             bool
-        @return:            True iff condition is set in digi channel.
+        :rtype:             bool
+        :return:            True iff condition is set in digi channel.
         """
         return self.get_digi() & condition == condition
 
     def on_off_pressed(self):
         """
         Check if on/off button is pressed.
-        
-        @rtype:     bool
-        @return:    True iff on/off button is pressed.
+
+        :rtype:     bool
+        :return:    True iff on/off button is pressed.
         """
         return self.check_digi(self.ON_OFF_BUTTON)
-    
+
     def trigger_active(self):
         """
         Check if trigger is active.
-        
-        @rtype:     bool
-        @return:    True iff trigger is active.
+
+        :rtype:     bool
+        :return:    True iff trigger is active.
         """
         return self.check_digi(self.TRIGGER_ACTIVE)
-    
+
     def battery_low(self):
         """
         Check if battery is low.
-        
-        @rtype:     bool
-        @return:    True iff battery is low.
+
+        :rtype:     bool
+        :return:    True iff battery is low.
         """
         return self.check_digi(self.BATTERY_LOW)
-    
+
     def decode(self):
         """
         Decode channel data contained in this packet.
-        
-        @rtype:     list of lists of ints
-        @return:    List indexed by channel numbers. Every list contains
+
+        :rtype:     list of lists of ints
+        :return:    List indexed by channel numbers. Every list contains
                     list of values in this channel.
         """
-        return [[self.extract_channel_data(x)] for x in \
-            range(self.number_of_channels)]
+        return [[self.extract_channel_data(x)] for x in
+                range(self.number_of_channels)]
 
 
 class VLDeltaInfo(Packet):
+
     """
     Packet containing VL Delta information (like transmission frequency
     divider).
     """
-    
+
     def __init__(self):
         super(VLDeltaInfo, self).__init__()
         self.declared_type = PACKET_TYPE.TMS_VL_DELTA_INFO
-    
+
     def get_trans_freq_div(self):
         """
         Returns value of transmission frequency divider from current packet.
-        
-        @rtype:     number
-        @return:    transmission frequency divider
+
+        :rtype:     number
+        :return:    transmission frequency divider
         """
         return self.get_word(2)
-    
+
     def get_divider_list(self, number_of_channels):
         """
         Decode dividers list from tha packet.
-        
-        @type number_of_channels:   number
-        @param number_of_channels:  number of data channels (not including digi
+
+        :type number_of_channels:   number
+        :param number_of_channels:  number of data channels (not including digi
                                     and saw channels)
-        @rtype:                     list of ints
-        @return:                    list of all dividers (including digi
+        :rtype:                     list of ints
+        :return:                    list of all dividers (including digi
                                     and saw channels)
         """
-        return [2 ** self.get_word(3 + a) for a in \
-            range(number_of_channels + FrontendInfo.NUMBER_OF_HELP_CHANNELS)]
+        return [2 ** self.get_word(3 + a) for a in
+                range(number_of_channels + FrontendInfo.NUMBER_OF_HELP_CHANNELS)]
 
 
 class VLDeltaData(ChannelData):
+
     """
     Packet containing VL Delta channel data.
     Supports VL Delta compression.
-    
+
     Delta dat packet has the following format:
-    - header
-    - references: data in all channels at the beginning of quant of time,
-        including data for digi and saw channels, these values are encoded like
-        in normal ChannelData packet
-    - delta bits: see below
-    - filling (because delta bits len can not be divisible by 16bit = word size)
-    - checksum
-    
+
+    * header
+    * references: data in all channels at the beginning of quant of time,
+      including data for digi and saw channels, these values are encoded like
+      in normal ChannelData packet
+    * delta bits: see below
+    * filling (because delta bits len can not be divisible by 16bit = word size)
+    * checksum
+
     Delta bits is raw stream of bits.
     Every delta is encoded as 4 bit length + delta body.
     Delta length can name values from 0 to 15. If length is 0, then delta body
     has 2 bits! In opposit case, delta body has delta length bits.
-    Delta length 0 (so in length we have all 0bits: "0000" bits) is used to 
+    Delta length 0 (so in length we have all 0bits: "0000" bits) is used to
     encode special delta values:
-    - 0 - delta = 0
-    - 1 - this value is never used!
-    - 2 - channels is in overflow
-    - 3 - delta = -1
-    
+
+    * 0 - delta = 0
+    * 1 - this value is never used!
+    * 2 - channels is in overflow
+    * 3 - delta = -1
+
     Every channel can have different divider. Lets consider an example, where
     there are only two channels: A and B.
     Channel A is send with 128Hz freq.
@@ -691,21 +710,21 @@ class VLDeltaData(ChannelData):
     this is signalised by using special delta, and later this channel will
     not be send in deltas (till the end of this packet).
     """
-    
+
     def __init__(self):
         super(VLDeltaData, self).__init__()
         self.declared_type = PACKET_TYPE.TMS_VL_DELTA_DATA
         self.channel_data = []
         self.vldelta_info = None
         self.delta_bits = None
-    
+
     def set_vldelta_info(self, vldelta_info):
         """
         Set VLDelta Info (user should obtain one from device before calling
         decode method).
-        
-        @type vldelta_info:     VLDeltaInfo
-        @param vldelta_info:    packet of type vldelta info containing divider
+
+        :type vldelta_info:     VLDeltaInfo
+        :param vldelta_info:    packet of type vldelta info containing divider
                                 list
         """
         self.vldelta_info = vldelta_info
@@ -714,9 +733,9 @@ class VLDeltaData(ChannelData):
         """
         Decode one delta data from delta_bits attribute.
         Later delete decoded data from delta_bits.
-        
-        @rtype:     tuple (bool, int)
-        @return:    (was this delta special, value of delta)
+
+        :rtype:     tuple (bool, int)
+        :return:    (was this delta special, value of delta)
         """
         assert len(self.delta_bits) > 4, "Not enough bits to decode delta len"
         delta_len = original_delta_len = \
@@ -737,47 +756,47 @@ class VLDeltaData(ChannelData):
         """
         Decode channel data contained in this packet.
         Supports VL Delta compression.
-        
-        @rtype:     list of lists of ints
-        @return:    List indexed by channel numbers. Every list contains
+
+        :rtype:     list of lists of ints
+        :return:    List indexed by channel numbers. Every list contains
                     list of values in this channel.
         """
-        divider_list = self.vldelta_info.get_divider_list( \
+        divider_list = self.vldelta_info.get_divider_list(
             self.number_of_channels)
         assert len(divider_list) == \
             self.number_of_channels + FrontendInfo.NUMBER_OF_HELP_CHANNELS, \
             "Divider list of invalid length"
-        
-        self.channel_data = [[self.extract_channel_data(x)] for x in \
-            range(self.number_of_channels)]
-        self.channel_data += [[ord(self.data[3 * self.number_of_channels])], \
-            [ord(self.data[1 + 3 * self.number_of_channels])]]
+
+        self.channel_data = [[self.extract_channel_data(x)] for x in
+                             range(self.number_of_channels)]
+        self.channel_data += [[ord(self.data[3 * self.number_of_channels])],
+                              [ord(self.data[1 + 3 * self.number_of_channels])]]
         overflow = [x == [self.OVERFLOW] for x in self.channel_data]
-        
-        self.delta_bits = reduce(lambda x, y: x + y, \
-            (num_to_bits(ord(x)) for x in \
-                self.data[3 * self.number_of_channels + \
-                    FrontendInfo.NUMBER_OF_HELP_CHANNELS:]))
+
+        self.delta_bits = reduce(lambda x, y: x + y,
+                                 (num_to_bits(ord(x)) for x in
+                                  self.data[3 * self.number_of_channels +
+                                            FrontendInfo.NUMBER_OF_HELP_CHANNELS:]))
         for i in range(1, self.vldelta_info.get_trans_freq_div() + 1):
-            for j in range(self.number_of_channels + \
-                FrontendInfo.NUMBER_OF_HELP_CHANNELS):
+            for j in range(self.number_of_channels +
+                           FrontendInfo.NUMBER_OF_HELP_CHANNELS):
                 if i % divider_list[j] == 0:
                     if not overflow[j]:
                         special, delta = self.decode_next_delta()
                         if special:
                             if delta == 0:
-                                self.channel_data[j].append( \
+                                self.channel_data[j].append(
                                     self.channel_data[j][-1])
                             elif delta == 1:
                                 assert False, "Special delta 1 not used"
                             elif delta == 2:
                                 overflow[j] = True
-                                self.channel_data[j].append(self.OVERFLOW)  
+                                self.channel_data[j].append(self.OVERFLOW)
                             elif delta == 3:
-                                self.channel_data[j].append( \
+                                self.channel_data[j].append(
                                     self.channel_data[j][-1] - 1)
                         else:
-                            self.channel_data[j].append( \
+                            self.channel_data[j].append(
                                 self.channel_data[j][-1] + delta)
                     else:
                         self.channel_data[j].append(self.OVERFLOW)
@@ -789,17 +808,16 @@ class VLDeltaData(ChannelData):
         Get Digi channel status.
         This channel contains data such as battery level, on off button status,
         trigger status.
-        
+
         For VLDelta Data packet, which can contain multiple information
         in digi channel, this is done by taking binary alternative of all
         digi channel values.
-        
-        @rtype:     number
-        @return:    byte containing flags (on/off button etc.) set in packet
-        """
-        return reduce(lambda x, y: x | y, \
-            self.channel_data[self.number_of_channels])
 
+        :rtype:     number
+        :return:    byte containing flags (on/off button etc.) set in packet
+        """
+        return reduce(lambda x, y: x | y,
+                      self.channel_data[self.number_of_channels])
 
 
 def __test():
@@ -809,101 +827,99 @@ def __test():
     - interpreting one VLDelta Info Packet
     - interpreting and decoding one VLDelta Data Packet using previous packets
     """
-    import StringIO
-    
+    import io
+
     bad_acknowledge_str = "\xaa\xaa\x02\x00\x10\x02\x19\x00\x2b\x53"
 
     frontend_info_str = \
-'\xaa\xaa\x10\x02"\x00\x03\x00\x01\x00\x00\x02X\xf1W\x0c\x18'\
-'\x00\x08\x00 \x07%\x07\x8c\x00\x8a\x00"\x00\x00\x08\xff\xff\xff\xff\xd6;'
+        '\xaa\xaa\x10\x02"\x00\x03\x00\x01\x00\x00\x02X\xf1W\x0c\x18'\
+        '\x00\x08\x00 \x07%\x07\x8c\x00\x8a\x00"\x00\x00\x08\xff\xff\xff\xff\xd6;'
 
     vldelta_info_str = \
-'\xaa\xaa%1\x00\x00\x04\x00\x07\x00\x01\x00\x01\x00\x01\x00\x01'\
-'\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00'\
-'\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01'\
-'\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x03\x00\x03\x00\x03\x00'\
-'\x00\x00\x00\x00\x02$'
+        '\xaa\xaa%1\x00\x00\x04\x00\x07\x00\x01\x00\x01\x00\x01\x00\x01'\
+        '\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00'\
+        '\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01\x00\x01'\
+        '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x03\x00\x03\x00\x03\x00'\
+        '\x00\x00\x00\x00\x02$'
 
     vldelta_data_str = \
-'\xaa\xaaI/\xdfo\x01\xde\xbe\x01\x98\xd4\xfd\x00\x00\x80\xbe^'\
-'\x01\x05y\x03\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00'\
-'\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00'\
-'\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80'\
-'\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00'\
-'\x00\x80\x00\x00\x80\x021\x80\xf8\x01\x80\x0f\x00|\x00\xe0\x03\x00\x1f\x00'\
-'\x00D@\xfc\x00\xc0\x07\x00>\x00\xf0\x01\x80\x0f\x00\x00" ~\x00\xe0\x03\x00'\
-'\x1f\x00\xf8\x00\xc0\x97*\x00\x11\x10\x01\xaf\xee\xf6'
-    
-    decode_result = [[94175, 94174, 94173, 94172], \
-        [114398, 114397, 114396, 114395], \
-        [-142184, -142185, -142186, -142187], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [89790, 89789, 89788, 89787], \
-        [227589, 227588, 227587, 224862], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608], \
-        [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608, \
-            8388608], \
-        [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608, \
-            8388608], \
-        [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608, \
-            8388608], \
-        [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608, \
-            8388608], \
-        [8388608], [8388608], [8388608], [8388608]]
+        '\xaa\xaaI/\xdfo\x01\xde\xbe\x01\x98\xd4\xfd\x00\x00\x80\xbe^'\
+        '\x01\x05y\x03\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00'\
+        '\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00'\
+        '\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80'\
+        '\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00\x00\x80\x00'\
+        '\x00\x80\x00\x00\x80\x021\x80\xf8\x01\x80\x0f\x00|\x00\xe0\x03\x00\x1f\x00'\
+        '\x00D@\xfc\x00\xc0\x07\x00>\x00\xf0\x01\x80\x0f\x00\x00" ~\x00\xe0\x03\x00'\
+        '\x1f\x00\xf8\x00\xc0\x97*\x00\x11\x10\x01\xaf\xee\xf6'
+
+    decode_result = [[94175, 94174, 94173, 94172],
+                     [114398, 114397, 114396, 114395],
+                     [-142184, -142185, -142186, -142187],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [89790, 89789, 89788, 89787],
+                     [227589, 227588, 227587, 224862],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608],
+                     [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608,
+                      8388608],
+                     [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608,
+                      8388608],
+                     [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608,
+                      8388608],
+                     [8388608, 8388608, 8388608, 8388608, 8388608, 8388608, 8388608,
+                      8388608],
+                     [8388608], [8388608], [8388608], [8388608]]
     digi_status_result = [False, False, False]
-    acknowledge_result = [True, \
-        "sample frequency divider out of range (<0, >max)", 25]
+    acknowledge_result = [True,
+                          "sample frequency divider out of range (<0, >max)", 25]
 
     # Test Acknowledge packet
-    acknowledge_packet = Acknowledge.read_one(StringIO.StringIO( \
+    acknowledge_packet = Acknowledge.read_one(io.StringIO(
         bad_acknowledge_str))
-        
-    assert [acknowledge_packet.is_error(), acknowledge_packet.get_error(), \
-        acknowledge_packet.get_error_code()] == acknowledge_result, \
+
+    assert [acknowledge_packet.is_error(), acknowledge_packet.get_error(),
+            acknowledge_packet.get_error_code()] == acknowledge_result, \
         "Acknowledge packet decoding error"
 
     # Test FrontendInfo packet
-    frontend_info_packet = FrontendInfo.read_one( \
-        StringIO.StringIO(frontend_info_str))
-    
+    frontend_info_packet = FrontendInfo.read_one(
+        io.StringIO(frontend_info_str))
+
     # Test VLDeltaInfo packet
-    vldelta_info_packet = VLDeltaInfo.read_one( \
-        StringIO.StringIO(vldelta_info_str))
-    
+    vldelta_info_packet = VLDeltaInfo.read_one(
+        io.StringIO(vldelta_info_str))
+
     # Test VLDeltaData packet
-    vldelta_data_packet = VLDeltaData.read_one( \
-        StringIO.StringIO(vldelta_data_str))
-    vldelta_data_packet.set_number_of_channels( \
+    vldelta_data_packet = VLDeltaData.read_one(
+        io.StringIO(vldelta_data_str))
+    vldelta_data_packet.set_number_of_channels(
         frontend_info_packet.get_number_of_data_channels())
     vldelta_data_packet.set_vldelta_info(vldelta_info_packet)
-    
+
     # Test VLDeltaData packet decode
     assert vldelta_data_packet.decode() == decode_result, "VLDelta decode error"
     # Test VLDeltaData trigget check
-    assert [vldelta_data_packet.trigger_active(), \
-        vldelta_data_packet.battery_low(), \
-        vldelta_data_packet.on_off_pressed()] == digi_status_result, \
-            "Digi status decode error"
-    print "Test: OK"
+    assert [vldelta_data_packet.trigger_active(),
+            vldelta_data_packet.battery_low(),
+            vldelta_data_packet.on_off_pressed()] == digi_status_result, \
+        "Digi status decode error"
+    print("Test: OK")
 
 if __name__ == "__main__":
     __test()
-
-        

@@ -1,10 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, absolute_import
-
 import os
-import sys
+import os.path
 
 NOT_READY = 'not_ready'
 READY_TO_LAUNCH = 'ready_to_launch'
@@ -37,7 +35,7 @@ class ExperimentStatus(object):
         d = dict(status_name=self.status_name,
                  details=self.details,
                  peers_status={})
-        for peer_id, st in self.peers_status.iteritems():
+        for peer_id, st in self.peers_status.items():
             d['peers_status'][peer_id] = st.as_dict()
         return d
 
@@ -46,7 +44,7 @@ class ExperimentStatus(object):
         return self.peers_status.get(peer_id, None)
 
     def peer_status_exists(self, status_name):
-        return status_name in [st.status_name for st in self.peers_status.values()]
+        return status_name in [st.status_name for st in list(self.peers_status.values())]
 
     def del_peer_status(self, peer_id):
         del self.peers_status[peer_id]
@@ -67,6 +65,7 @@ class PeerStatus(object):
         return dict(peer_id=self.peer_id, status_name=self.status_name,
                     details=self.details)
 
+
 def obci_root():
     path = os.path.realpath(os.path.dirname(__file__))
     path = os.path.split(path)[0]
@@ -86,12 +85,12 @@ def obci_root_relative(path):
     return _path
 
 
-def mx_path():
-    return os.path.join(obci_root(), 'multiplexer-install', 'bin', 'mxcontrol')
-
-
-def mx_rules_path():
-    return os.path.join(obci_root(), 'configs', 'multiplexer.rules')
+def broker_path():
+    """ Used only in obci_process_supervisor.py and supervisor_test.py """
+    if which('obci_broker'):
+        return which('obci_broker')
+    else:
+        return os.path.join(obci_root(), 'bin', 'obci_broker')
 
 
 def module_path(module):
@@ -121,11 +120,22 @@ def expand_path(program_path, base_dir=None):
         return program_path
     program_path = os.path.normpath(program_path)
     p = os.path.expanduser(program_path)
-    if os.path.isabs(p):
+    obcip = os.path.realpath(os.path.join(base_dir, p))
+    if os.path.isabs(p) and os.path.exists(p):
         return p
+    elif os.path.exists(obcip):
+        return obcip
+    elif which(p):
+        return which(p)
     else:
-        return os.path.realpath(os.path.join(base_dir, p))
+        return program_path
+
+
+def which(file):
+    for path in os.environ["PATH"].split(os.pathsep):
+        if os.path.exists(os.path.join(path, file)):
+            return os.path.join(path, file)
+    return None
 
 if __name__ == '__main__':
     print(obci_root())
-

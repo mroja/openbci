@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import time
-import obci_log_model
+from . import obci_log_model
 
 
 class DummyLogModel(obci_log_model.LogModel):

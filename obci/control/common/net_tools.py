@@ -3,7 +3,7 @@
 
 import socket
 import os
-import ConfigParser
+import configparser
 import threading
 import logging
 import time
@@ -12,15 +12,16 @@ from obci.control.common.obci_control_settings import INSTALL_DIR, OBCI_HOME_DIR
 from obci.control.common.config_helpers import OBCISystemError
 
 
-
 def is_net_addr(addr):
     return not addr.startswith('ipc') \
-            and not addr.startswith('inproc')
+        and not addr.startswith('inproc')
+
 
 def addr_is_local(addr):
     return addr.startswith('tcp://localhost') or\
-                    addr.startswith('tcp://0.0.0.0') or\
-                    addr.startswith('tcp://127.0.0.1')
+        addr.startswith('tcp://0.0.0.0') or\
+        addr.startswith('tcp://127.0.0.1')
+
 
 def choose_local(addrs, ip=False):
     result = []
@@ -30,12 +31,14 @@ def choose_local(addrs, ip=False):
         result += [a for a in addrs if addr_is_local(a)]
     return result
 
+
 def choose_not_local(addrs):
-    result = [a for a in addrs if a.startswith('tcp://') and not a.startswith('tcp://'+lo_ip()) and not\
-                            a.startswith('tcp://localhost')]
-    #if not result:
+    result = [a for a in addrs if a.startswith('tcp://') and not a.startswith('tcp://' + lo_ip()) and not
+              a.startswith('tcp://localhost')]
+    # if not result:
     #    result += [a for a in addrs if a.startswith('tcp://')]
     return result
+
 
 def choose_addr(addr_list):
     nl = choose_not_local(addr_list)
@@ -49,6 +52,7 @@ def choose_addr(addr_list):
 def lo_ip():
     return '127.0.0.1'
 
+
 def ext_ip(peer_ip=None):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_ip = ''
@@ -58,12 +62,11 @@ def ext_ip(peer_ip=None):
         s.connect((peer_ip, 9))
         client_ip = s.getsockname()[0]
     except socket.error as e:
-        print "ext_ip(peer_ip: {0}):  {1}".format(peer_ip, e)
+        print("ext_ip(peer_ip: {0}):  {1}".format(peer_ip, e))
         client_ip = lo_ip()
 
     del s
     return client_ip
-
 
 
 def server_address(sock_type='rep', local=False, peer_ip=None):
@@ -73,7 +76,6 @@ def server_address(sock_type='rep', local=False, peer_ip=None):
         port = parser.get('server', 'port')
     else:
         port = parser.get('server', 'pub_port')
-
 
     ip = lo_ip() if local else ext_ip(peer_ip=peer_ip)
     return 'tcp://' + ip + ':' + port
@@ -87,14 +89,15 @@ def __parser_main_config_file():
 
     parser = None
     if os.path.exists(fpath):
-        parser = ConfigParser.RawConfigParser()
+        parser = configparser.RawConfigParser()
         with open(fpath) as f:
             parser.readfp(f)
     else:
 
-        print "Main config file not found in {0}".format(directory)
+        print("Main config file not found in {0}".format(directory))
         raise OBCISystemError()
     return parser
+
 
 def port(addr_string):
     parts = addr_string.rsplit(':', 1)
@@ -105,10 +108,11 @@ def port(addr_string):
     maybe_port = parts[-1]
     try:
         port = int(maybe_port)
-    except ValueError, e:
+    except ValueError as e:
         return None
     else:
         return port
+
 
 def is_ip(addr_string):
     parts = addr_string.rsplit(':', 1)
@@ -118,62 +122,68 @@ def is_ip(addr_string):
     start = nums[0]
     ind = nums[0].find('://')
     if ind > -1:
-        start = start[ind+3:]
+        start = start[ind + 3:]
         nums[0] = start
     if len(nums) < 4:
         return False
     for p in nums:
         try:
             n = int(p)
-        except Exception, e:
+        except Exception as e:
             return False
     return True
+
 
 def server_pub_port():
     parser = __parser_main_config_file()
     port = parser.get('server', 'pub_port')
     return port
 
+
 def server_rep_port():
     parser = __parser_main_config_file()
     port = parser.get('server', 'port')
     return port
 
+
 def server_bcast_port():
     parser = __parser_main_config_file()
     try:
         port = parser.get('server', 'bcast_port')
-    except Exception, e:
-        print "[ WARNING! WARNING! ] Config file is not up to date. Taking default bcast_port value!"
+    except Exception as e:
+        print("[ WARNING! WARNING! ] Config file is not up to date. Taking default bcast_port value!")
         port = '23123'
     return port
+
 
 def server_tcp_proxy_port():
     parser = __parser_main_config_file()
     try:
         port = parser.get('server', 'tcp_proxy_port')
-    except Exception, e:
-        print "[ WARNING! WARNING! ] Config file is not up to date. Taking default tcp_proxy_port value!"
+    except Exception as e:
+        print("[ WARNING! WARNING! ] Config file is not up to date. Taking default tcp_proxy_port value!")
         port = '12012'
     return port
+
 
 def peer_loglevel():
     parser = __parser_main_config_file()
     try:
         loglevel = parser.get("mx", "peer_loglevel")
     except Exception:
-        print "[ WARNING! WARNING! ] Config file is not up to date. Taking default peer_loglevel value!"
+        print("[ WARNING! WARNING! ] Config file is not up to date. Taking default peer_loglevel value!")
         loglevel = "debug"
     return loglevel
 
+
 class DNS(object):
+
     def __init__(self, allowed_silence_time=45, logger=None):
         self.__lock = threading.RLock()
         self.__servers = {}
         self.logger = logger or logging.getLogger("dns")
 
         self.allowed_silence = allowed_silence_time
-
 
     def tcp_rep_addr(self, hostname=None, ip=None, uuid=None):
         srv = self._match_srv(hostname, ip, uuid)
@@ -203,7 +213,6 @@ class DNS(object):
                 if getattr(srv, 'hostname') == value:
                     matches.append(srv)
         return matches
-
 
     def http_addr(self, hostname=None, ip=None, uuid=None):
         srv = self._match_srv(hostname, ip, uuid)
@@ -241,8 +250,8 @@ class DNS(object):
         with self.__lock:
             old = self.__servers.get(uuid, None)
             new = self.__servers[uuid] = PeerNetworkDescriptor(ip, hostname, uuid,
-                                                            rep_port, pub_port,
-                                                            http_port)
+                                                               rep_port, pub_port,
+                                                               http_port)
         changed = old is None
         if not changed:
             changed = old.ip != new.ip or old.hostname != new.hostname
@@ -257,14 +266,13 @@ class DNS(object):
     def clean_silent(self):
         changed = False
         with self.__lock:
-            ids = self.__servers.keys()
             check_time = time.time()
-            for uid in ids:
+            for uid in list(self.__servers.keys()):
                 srv = self.__servers[uid]
                 if srv.timestamp + self.allowed_silence < check_time:
                     changed = True
-                    self.logger.warning("obci_server on " + str(srv.ip) +'   ' +\
-                             srv.hostname + " is most probably down.")
+                    self.logger.warning("obci_server on " + str(srv.ip) + '   ' +
+                                        srv.hostname + " is most probably down.")
                     del self.__servers[uid]
         return changed
 
@@ -289,8 +297,8 @@ class DNS(object):
         return new
 
 
-
 class PeerNetworkDescriptor(object):
+
     def __init__(self, ip, hostname, uuid, rep_port, pub_port, http_port=None, timestamp=None):
         self.ip = ip
         self.hostname = hostname
@@ -304,8 +312,8 @@ class PeerNetworkDescriptor(object):
         return str(self.as_dict())
 
     def _copy(self):
-        desc =  PeerNetworkDescriptor(self.ip, self.hostname, self.uuid,
-                                    self.rep_port, self.pub_port, self.http_port)
+        desc = PeerNetworkDescriptor(self.ip, self.hostname, self.uuid,
+                                     self.rep_port, self.pub_port, self.http_port)
         desc.timestamp = self.timestamp
         return desc
 
@@ -314,8 +322,7 @@ class PeerNetworkDescriptor(object):
         return dict(vars(self))
 
 
-
 if __name__ == '__main__':
-    #print ext_ip()
-    print __file__
-    print INSTALL_DIR
+    # print ext_ip()
+    print(__file__)
+    print(INSTALL_DIR)

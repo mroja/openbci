@@ -1,5 +1,0 @@
-
-NOTE: before running on Ubuntu add current user to the 'dialout' group:
-
- $ sudo gpasswd --add USER_NAME dialout
-

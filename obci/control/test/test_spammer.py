@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from multiplexer.multiplexer_constants import peers, types
-from multiplexer.clients import BaseMultiplexerServer
-import settings
-import zmq
+from obci.mx_legacy.multiplexer_constants import peers, types
+from obci.mx_legacy.clients import BaseMultiplexerServer
+from obci.configs import settings
+
 
 class Filter(BaseMultiplexerServer):
+
     def __init__(self, addresses):
         super(Filter, self).__init__(addresses=addresses, type=peers.FILTER)
-
 
     def handle_message(self, mxmsg):
         if mxmsg.type == types.AMPLIFIER_SIGNAL_MESSAGE:

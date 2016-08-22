@@ -1,3 +1,0 @@
-"""
-Eyetracker-Amplifier for Tobii
-"""

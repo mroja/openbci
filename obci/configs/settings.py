@@ -1,5 +1,9 @@
+
 import os
-from ConfigParser import SafeConfigParser
+import os.path
+import sys
+
+from configparser import SafeConfigParser
 
 addrs = os.environ.get('MULTIPLEXER_ADDRESSES', '').split(',')
 addr_tuples = []
@@ -10,9 +14,6 @@ if addrs:
             addr_tuples.append((addr[0], int(addr[1])))
 
 MULTIPLEXER_ADDRESSES = addr_tuples if addr_tuples else [("0.0.0.0", 31889)]
-MULTIPLEXER_PASSWORD = os.environ.get('MULTIPLEXER_PASSWORD', "")
-
-import os.path, sys
 
 """MAIN DIR is a path to openbci main directory."""
 MAIN_DIR = ''.join([os.path.split(
@@ -31,8 +32,7 @@ def current_appliance():
         app = 'dummy'
 
     return app
-      
-        
+
 
 def module_abs_path():
     """This method returns absolute path to directory containing a module
@@ -41,14 +41,16 @@ def module_abs_path():
     ugm.py:
     import settings
     print(settings.module_abs_path())
-    
-    firing python z/ugm/ugm.py while being in y dir, will print out 
+
+    firing python z/ugm/ugm.py while being in y dir, will print out
     /x/y/z/ugm/ path.
     """
     return ''.join([
-            os.path.realpath(os.path.dirname(sys.argv[0])), 
-                    os.path.sep
-            ])
+        os.path.realpath(os.path.dirname(sys.argv[0])),
+        os.path.sep
+    ])
+
+
 def executable_abs_path():
     """This method returns absolute path to directory containing a script
     that excecuted python interpreter.
@@ -56,7 +58,7 @@ def executable_abs_path():
     ugm.py:
     import settings
     print(settings.executable_abs_path())
-    
+
     firing python z/ugm/ugm.py while being in y dir, will print out /x/y/ path.
     """
     return ''.join([os.getcwd(), os.path.sep])

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#import system_settings
+# import system_settings
 
 import os
 import os.path
@@ -9,8 +9,6 @@ import shutil
 from obci.control.peer.config_defaults import CONFIG_DEFAULTS
 
 OBCI_CONTROL_LOG_DIR = os.path.join(CONFIG_DEFAULTS["log_dir"], "control")
-
-USE_ZMQ = False
 
 PORT_RANGE = (30000, 60000)
 
@@ -20,6 +18,7 @@ DEFAULT_SCENARIO_DIR = os.path.join(OBCI_HOME_DIR, 'scenarios')
 
 SERVER_CONTACT_NAME = '.obci_server_contact'
 MAIN_CONFIG_NAME = 'main_config.ini'
+
 
 def __obci_install_dir():
     dirname = os.path.abspath(os.path.dirname(__file__))
@@ -43,4 +42,3 @@ if not os.path.exists(DEFAULT_SCENARIO_DIR):
     os.mkdir(DEFAULT_SCENARIO_DIR)
 if not os.path.exists(os.path.join(OBCI_HOME_DIR, MAIN_CONFIG_NAME)):
     shutil.copyfile(MAIN_CONFIG_TEMPLATE_PATH, os.path.join(OBCI_HOME_DIR, MAIN_CONFIG_NAME))
-

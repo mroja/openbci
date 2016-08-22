@@ -1,29 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-from __future__ import print_function, absolute_import
 
 import os
 import sys
-
-import time
 import argparse
-import subprocess
-import ConfigParser
-import signal
-
-import zmq
 
 from obci.control.launcher.obci_script_utils import (server_process_running,
                                                      client_server_prep,
                                                      disp)
 
 from obci.control.launcher import obci_server
-from obci.control.launcher import obci_client
 
-import obci.control.common.obci_control_settings as settings
-import obci.control.common.net_tools as net
-from obci.control.common.config_helpers import OBCISystemError
 from obci.control.peer.peer_cmd import PeerCmd
 import obci.control.peer.peer_cmd as peer_cmd
 
@@ -300,21 +287,21 @@ a few first letters of its UUID or of its name \
 
 class OBCIArgParser(object):
     defined_commands = {
-        "launch" : dict(help="Launch an OpenBCI system with configuration \
+        "launch": dict(help="Launch an OpenBCI system with configuration \
 specified in a launch file or in a newly created Experiment",
-                        setup_func=setup_launch),
+                       setup_func=setup_launch),
         "srv": dict(parser_parents=[obci_server.server_arg_parser(add_help=False)],
                     help="Start OBCIServer",
                     setup_func=setup_srv),
         "srv_kill": dict(parser_parents=[obci_server.server_arg_parser(add_help=False)],
                          help="Kill OBCIServer",
                          setup_func=setup_srv_kill),
-        "morph" : dict(help='Transform chosen running scenario into another.\
+        "morph": dict(help='Transform chosen running scenario into another.\
 Optionally leave some peers running instead of restarting them',
-                       setup_func=setup_morph),
-        "info" : dict(help="Get information about controlled OpenBCI experiments\
+                      setup_func=setup_morph),
+        "info": dict(help="Get information about controlled OpenBCI experiments\
                         and peers",
-                      setup_func=setup_info),
+                     setup_func=setup_info),
         "kill": dict(help="Kill an OpenBCI experiment",
                      setup_func=setup_kill)
     }
@@ -328,8 +315,8 @@ Optionally leave some peers running instead of restarting them',
                                               prog=prog)
         self.subparsers = self.parser.add_subparsers(
             title='available commands',
-                                description='(use %(prog)s *command* -h for help on a specific command)',
-                                dest='command_name')
+            description='(use %(prog)s *command* -h for help on a specific command)',
+            dest='command_name')
         self.conf_parser = PeerCmd().conf_parser
         self._commands = {}
 
